@@ -1,6 +1,7 @@
 import {S,save,reset,exportJSON,importJSON,DEFECTS} from './store.js';
 import {ACT,IN,ic,refresh,modal,closeModal,toast,ask} from './ui.js';
 import {getCfg,getStatus,ping,connect,disconnect,syncNow,pendingCount} from './sync.js';
+import {lang,setLang,locale} from './i18n.js';
 import {esc,fNum,download,uid,pad} from './util.js';
 export const title='ตั้งค่า';
 const lines=a=>a.join('\n'),parse=s=>s.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
@@ -15,6 +16,7 @@ export function render(){const bytes=new Blob([JSON.stringify(S)]).size;
     <div class="f"><label>พนักงานผลิต</label><textarea class="in" name="operators" rows="3">${esc(lines(S.settings.operators))}</textarea></div>
     <div class="f"><label>ผู้ตรวจ QC</label><textarea class="in" name="inspectors" rows="3">${esc(lines(S.settings.inspectors))}</textarea></div>
     <div class="acts"><button class="btn pri">${ic('check')} บันทึก</button></div></form>
+   <div class="card"><h2>ภาษา</h2><div class="seg" data-nt><button type="button" class="${lang==='th'?'on':''}" data-act="setLang" data-v="th">ไทย</button><button type="button" class="${lang==='en'?'on':''}" data-act="setLang" data-v="en">English</button></div></div>
    <div class="card"><h2>หน้าตา</h2><div class="seg">${[['auto','อัตโนมัติ'],['light','สว่าง'],['dark','มืด']].map(([v,t])=>`<button class="${(S.settings.theme||'auto')===v?'on':''}" data-act="setTheme" data-v="${v}" type="button">${t}</button>`).join('')}</div></div></div>
   <div style="display:grid;gap:16px"><div class="card"><div class="ch-h"><h2>แม่แบบการตรวจ (QC Plan)</h2><span class="sp"></span><button class="btn sm" data-act="tplEdit" data-id="">${ic('plus')} สร้างใหม่</button></div>
     <div class="rows">${S.templates.map(t=>{const n=S.products.filter(p=>p.templateId===t.id).length;return`<div class="row" data-act="tplEdit" data-id="${t.id}"><span class="dot">${ic('file')}</span><div class="m"><b>${esc(t.name)}</b><small>${t.items.length} หัวข้อ · ใช้กับ ${n} สินค้า</small></div>${ic('edit')}</div>`}).join('')||'<div class="empty-s">ยังไม่มีแม่แบบ</div>'}</div></div>
@@ -27,7 +29,7 @@ export function render(){const bytes=new Blob([JSON.stringify(S)]).size;
    <div class="card"><h2>เริ่มใหม่</h2><div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn" data-act="loadDemo">โหลดข้อมูลตัวอย่าง</button><button class="btn danger" data-act="wipe">${ic('trash')} ล้างข้อมูลทั้งหมด</button></div></div>
    <div class="card" style="display:flex;gap:16px;align-items:center"><img src="assets/brand/logo-96.png" alt="" style="height:84px"><div><h2>เกี่ยวกับ</h2><p class="mut" style="margin:0;font-size:.9rem">CoreDash Smart QC v1.0 · ระบบตรวจสอบคุณภาพและติดตามประวัติการผลิตสำหรับโรงงาน SME<br>© CoreDash Technology</p></div></div></div></div>`}
 const cloudChip=()=>{const m=getStatus().mode;return getCfg()?(m==='ok'?'<span class="chip ok">เชื่อมต่อแล้ว</span>':m==='busy'?'<span class="chip info">กำลังซิงก์</span>':m==='offline'?'<span class="chip warn">ออฟไลน์</span>':'<span class="chip bad">ผิดพลาด</span>'):'<span class="chip">ยังไม่เชื่อมต่อ</span>'};
-const cloudLast=()=>{const t=getStatus().last;return t?'ซิงก์ล่าสุด '+new Date(t).toLocaleString('th-TH'):'ยังไม่เคยซิงก์'};
+const cloudLast=()=>{const t=getStatus().last;return t?'ซิงก์ล่าสุด '+new Date(t).toLocaleString(locale()):'ยังไม่เคยซิงก์'};
 ACT.syncNow=async()=>{try{await syncNow();toast('ซิงก์แล้ว')}catch(e){toast('ซิงก์ไม่สำเร็จ: '+e.message,5000)}refresh()};
 ACT.cloudOff=async()=>{if(await ask('ยกเลิกการเชื่อมต่อ','ข้อมูลบนเครื่องนี้ยังอยู่ แต่จะไม่ซิงก์กับ Google Sheet อีก','ยกเลิกการเชื่อมต่อ','danger')){disconnect();window.dispatchEvent(new Event('cdq-shell'));refresh()}};
 export function mount(){const cf=document.getElementById('cloudf');if(cf)cf.onsubmit=async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(cf)),btn=cf.querySelector('button');btn.disabled=true;
@@ -37,6 +39,7 @@ export function mount(){const cf=document.getElementById('cloudf');if(cf)cf.onsu
   catch(err){btn.disabled=false;toast('เชื่อมต่อไม่ได้: '+err.message+' — ตรวจ URL / Token / การตั้งค่า Deploy',6000)}};
 const f=document.getElementById('setf');if(f)f.onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(f));const t=parseFloat(d.target);
   Object.assign(S.settings,{company:d.company.trim()||'CoreDash Smart QC',plant:d.plant.trim(),target:isNaN(t)?95:Math.min(100,Math.max(1,t)),lines:parse(d.lines).length?parse(d.lines):['Line A'],operators:parse(d.operators).length?parse(d.operators):['พนักงาน'],inspectors:parse(d.inspectors).length?parse(d.inspectors):['QC']});save();toast('บันทึกแล้ว');window.dispatchEvent(new Event('cdq-shell'));refresh()}}
+ACT.setLang=el=>setLang(el.dataset.v);
 ACT.setTheme=el=>{S.settings.theme=el.dataset.v;save();window.dispatchEvent(new Event('cdq-theme'));refresh()};
 ACT.bkExport=()=>{const d=new Date();download(`coredash-qc-backup-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`,new Blob([exportJSON()],{type:'application/json'}))};
 IN.bkImport=async el=>{const f=el.files[0];if(!f)return;if(!await ask('กู้คืนข้อมูล','ข้อมูลปัจจุบันจะถูกแทนที่ด้วยข้อมูลจากไฟล์สำรอง','กู้คืน','danger'))return;try{importJSON(await f.text());toast('กู้คืนข้อมูลแล้ว');window.dispatchEvent(new Event('cdq-shell'));refresh()}catch(e){toast('ไฟล์ไม่ถูกต้อง: '+e.message,4000)}};

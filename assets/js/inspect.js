@@ -14,16 +14,22 @@ function renderScan(){
   <div class="grid g21"><div class="card"><div class="scan"><label class="mut" style="font-weight:600;font-size:.85rem">Serial Number</label>
     <form id="snf" style="display:grid;gap:10px"><input class="in" id="snIn" name="sn" placeholder="ยิงบาร์โค้ด / พิมพ์ Serial…" autocomplete="off" autocapitalize="characters" autofocus enterkeyhint="go" list="snl"><datalist id="snl">${waiting.slice(0,60).map(u=>`<option value="${esc(u.sn)}">`).join('')}</datalist>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn pri lg">${ic('check')} เริ่มตรวจ</button><button type="button" class="btn lg" data-act="camScan">${ic('camera')} สแกนกล้อง</button></div></form>
-    <div class="mut" style="font-size:.85rem">เครื่องยิงบาร์โค้ด USB/Bluetooth ใช้ได้เลย — ยิงแล้วระบบเริ่มตรวจให้อัตโนมัติ</div></div></div>
+    <div class="mut" style="font-size:.85rem">เครื่องยิงบาร์โค้ด USB/Bluetooth ใช้ได้เลย — ยิงแล้วระบบเริ่มตรวจให้อัตโนมัติ · QR ที่ติดมากับบอร์ด/อุปกรณ์ (ไม่ได้พิมพ์จากระบบนี้) ก็สแกนแล้วลงทะเบียนได้ทันที</div></div></div>
     <div class="card"><h2>ผู้ตรวจ</h2><select class="in" data-in="insp">${S.settings.inspectors.map(n=>`<option ${n===inspector()?'selected':''}>${esc(n)}</option>`).join('')}</select><p class="mut" style="font-size:.85rem;margin:10px 0 0">ชื่อผู้ตรวจจะถูกบันทึกกับผลตรวจทุกชิ้น เพื่อใช้ย้อนรอย</p></div></div>
   ${failed.length?`<div class="card" style="margin-top:16px"><div class="ch-h"><h2>รอตรวจซ้ำ (FAIL)</h2><span class="chip bad">${failed.length}</span></div><div class="rows">${failed.slice(0,5).map(item).join('')}</div></div>`:''}
   <div class="card" style="margin-top:16px"><div class="ch-h"><h2>ชิ้นที่รอตรวจ</h2><span class="chip">${fNum(waiting.length)}</span></div><div class="rows">${waiting.slice(0,10).map(item).join('')||'<div class="empty-s">ไม่มีชิ้นงานรอตรวจ — เปิดล็อตใหม่ได้ที่เมนู "สินค้า"</div>'}</div></div>`}
 IN.insp=el=>localStorage.setItem('cdq.inspector',el.value);
-function submitSn(sn){sn=parseScan(sn);if(!sn)return;const u=unitBySn(sn);if(u)return go('/inspect/'+encodeURIComponent(u.sn));
-  modal(`<h2>ไม่พบ Serial นี้</h2><p class="mut">“<span class="mono">${esc(sn)}</span>” ยังไม่ได้ลงทะเบียน — ลงทะเบียนตอนนี้แล้วตรวจต่อได้เลย</p><form id="qf"><div class="f"><label>สินค้า</label><select class="in" name="p">${S.products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div><div class="acts"><button type="button" class="btn" data-act="mClose2">ยกเลิก</button><button class="btn pri">ลงทะเบียน & ตรวจ</button></div></form>`);
-  document.getElementById('qf').onsubmit=e=>{e.preventDefault();const pid=new FormData(e.target).get('p');let lot=S.lots.filter(l=>l.productId===pid).sort((a,b)=>b.ts-a.ts)[0];
-    if(!lot)lot=createLot({productId:pid,qty:0,line:S.settings.lines[0],shift:'A',operator:S.settings.operators[0]});addUnits({lotId:lot.id,sns:[sn]});save();closeModal();go('/inspect/'+encodeURIComponent(sn))}}
-ACT.mClose2=()=>closeModal();
+export function submitSn(sn,opt={}){sn=parseScan(sn);if(!sn)return;const u=unitBySn(sn);if(u)return go((opt.to||'/inspect/')+encodeURIComponent(u.sn));askRegister(sn,opt)}
+/* โค้ดที่ยังไม่อยู่ในระบบ (เช่น QR ที่ติดมากับบอร์ด/อุปกรณ์) → ลงทะเบียนจากโค้ดนั้นได้ทันที */
+export function askRegister(sn,opt={}){
+  if(!S.products.length)return modal(`<h2>ยังไม่มีสินค้าในระบบ</h2><p class="mut">ต้องเพิ่มสินค้า (เช่น ชื่อบอร์ด/อุปกรณ์) ก่อน จึงจะลงทะเบียนโค้ดได้</p><div class="acts"><button class="btn" data-act="mClose2">ปิด</button><button class="btn pri" data-act="goProducts">ไปเพิ่มสินค้า</button></div>`);
+  modal(`<h2>พบโค้ดใหม่ — ยังไม่ได้ลงทะเบียน</h2><p class="mono" style="word-break:break-all;background:var(--surface2);padding:10px 12px;border-radius:12px;margin:0 0 12px">${esc(sn)}</p><form id="qf"><div class="f"><label>สินค้า / ประเภทบอร์ด</label><select class="in" name="p">${S.products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div><div class="f"><label>ชื่อเรียก / ตำแหน่งอุปกรณ์ (ไม่บังคับ)</label><input class="in" name="label" placeholder="เช่น บอร์ดควบคุมเครื่องอัด #3" autocomplete="off"></div><div class="acts" style="flex-wrap:wrap"><button type="button" class="btn" data-act="mClose2">ยกเลิก</button><button type="button" class="btn" data-act="regOnly">ลงทะเบียนอย่างเดียว</button><button class="btn pri">ลงทะเบียน & ตรวจ</button></div></form>`);
+  const f=document.getElementById('qf');let only=false;ACT.regOnly=()=>{only=true;f.requestSubmit()};
+  f.onsubmit=e=>{e.preventDefault();const d=new FormData(f),pid=d.get('p');let lot=S.lots.filter(l=>l.productId===pid).sort((a,b)=>b.ts-a.ts)[0];
+    if(!lot)lot=createLot({productId:pid,qty:0,line:S.settings.lines[0],shift:'A',operator:S.settings.operators[0]});addUnits({lotId:lot.id,sns:[sn]});
+    const nu=unitBySn(sn);if(nu&&String(d.get('label')).trim())nu.label=String(d.get('label')).trim();save();closeModal();toast('ลงทะเบียนแล้ว');
+    if(only){go(opt.back||'/inspect');refresh()}else go('/inspect/'+encodeURIComponent(sn))}}
+ACT.mClose2=()=>closeModal();ACT.goProducts=()=>{closeModal();go('/products')};
 /* ---------- สแกนด้วยกล้อง ---------- */
 ACT.camScan=()=>openScanner(submitSn);
 /* ---------- หน้าตรวจ ---------- */

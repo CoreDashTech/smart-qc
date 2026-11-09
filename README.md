@@ -1,4 +1,4 @@
-# CoreDashTech — CoreDash Smart QC
+# CoreDashTech — CoreDash Smart QC (ไทย / English)
 
 ระบบตรวจสอบคุณภาพสินค้าและติดตามประวัติการผลิต สำหรับโรงงานขนาดเล็กและ SME
 โดย **CoreDash Technology** — เว็บแอป + ติดตั้งบนมือถือได้ (PWA) ไม่ต้องมีเซิร์ฟเวอร์ ข้อมูลเก็บใน Google Sheet ของลูกค้าเอง
@@ -13,11 +13,21 @@
 | รายงาน | กรองช่วงเวลา/สินค้า/ไลน์/ผล, กราฟ, FPY, Export Excel / CSV, พิมพ์ PDF |
 | ตั้งค่า | ข้อมูลโรงงาน, เป้า %, ไลน์/พนักงาน/ผู้ตรวจ, แก้ QC Plan, ธีมมืด/สว่าง, สำรอง/กู้คืน, **เชื่อม Google Sheet** |
 
-## ติดตั้งขึ้น GitHub Pages (repo ชื่อ `CoreDashTech`)
-1. https://github.com/nupinhomeschool → New repository → ชื่อ **CoreDashTech** (Public)
+## 🌐 2 ภาษา / Bilingual
+ไทย ⇄ English — กดปุ่ม **EN / ไทย** มุมขวาบน (หรือ ตั้งค่า → ภาษา) ทุกหน้า ทุกปุ่ม รายงาน Export Excel และใบรับรองเปลี่ยนตามภาษาที่เลือก · ครั้งแรกจะเลือกตามภาษาของเบราว์เซอร์
+Switch Thai ⇄ English with the **EN / ไทย** button (top right) or Settings → Language. Menus, reports, Excel exports and certificates follow the selected language.
+
+## สแกน QR ที่ติดมากับบอร์ด/อุปกรณ์ / Scanning QR codes already on boards & equipment
+1. ตรวจ QC → **สแกนกล้อง** → เล็ง QR บนบอร์ด (รองรับ QR ที่เป็นข้อความล้วน, `SN:xxxx`, URL ที่มี `?sn=`, JSON `{"sn":"…"}`)
+2. ถ้าโค้ดยังไม่อยู่ในระบบ → เลือกสินค้า/ประเภทบอร์ด + ใส่ชื่อเรียก/ตำแหน่ง → **ลงทะเบียน & ตรวจ** (หรือ “ลงทะเบียนอย่างเดียว”)
+3. ทำเช็กลิสต์ ถ่ายรูปบอร์ด → บันทึก PASS/FAIL (เก็บเวลา ผู้ตรวจ ค่าที่วัด รูป)
+4. ค้นหาย้อนหลัง: ย้อนรอย → สแกนซ้ำ หรือพิมพ์ Serial/ชื่อเรียก/ล็อต · ดูรายงานรวมที่เมนู รายงาน (กรอง, Export Excel)
+
+## ติดตั้งขึ้น GitHub Pages (org `CoreDashTech` / repo `smart-qc`)
+1. https://github.com/CoreDashTech → New repository → ชื่อ **smart-qc** (Public)
 2. อัปโหลด **ทุกไฟล์ในโฟลเดอร์นี้** (ให้ `index.html` อยู่ที่ราก)
 3. Settings → Pages → Source: `Deploy from a branch` → `main` / `(root)` → Save
-4. รอ 1–2 นาที เปิด `https://nupinhomeschool.github.io/CoreDashTech/`
+4. รอ 1–2 นาที เปิด `https://coredashtech.github.io/smart-qc/`
 5. บนมือถือ: เปิดลิงก์ → เมนูเบราว์เซอร์ → **เพิ่มลงหน้าจอหลัก / Install app**
    (กล้องสแกนต้องเปิดผ่าน https เท่านั้น — GitHub Pages ใช้ได้)
 

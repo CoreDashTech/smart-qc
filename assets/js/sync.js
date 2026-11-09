@@ -1,15 +1,16 @@
 /* ซิงก์กับ Google Sheet (ผ่าน Google Apps Script Web App) — local-first: ใช้งานออฟไลน์ได้ แล้วซิงก์เมื่อมีเน็ต */
+import {tr} from './i18n.js';
 import {S,onChange,save,getP,getL,getT} from './store.js';
 const CFG='cdq.cfg',ST='cdq.sst',PK='cdq.photo.';
 const COLS={products:'products',templates:'templates',lots:'lots',units:'units',inspections:'inspections',events:'events'};
 const KEY={units:'sn'};const keyOf=(c,r)=>r[KEY[c]||'id'];
-const HDR={products:['SKU','ชื่อสินค้า','หมวด','หน่วย','แม่แบบตรวจ'],templates:['ชื่อแม่แบบ','จำนวนหัวข้อ','หัวข้อ'],lots:['เลขล็อต','สินค้า','จำนวน','ไลน์','กะ','ผู้ผลิต','วันที่'],units:['Serial','สินค้า','ล็อต','สถานะ'],inspections:['เวลา','Serial','สินค้า','ล็อต','ผู้ตรวจ','รอบที่','ผล','รหัสของเสีย','สาเหตุ','ค่าที่วัด','หมายเหตุ'],events:['เวลา','Serial','เหตุการณ์','โดย'],settings:['บริษัท','โรงงาน','เป้า %']};
+const HDR={products:['SKU','ชื่อสินค้า','หมวด','หน่วย','แม่แบบตรวจ'],templates:['ชื่อแม่แบบ','จำนวนหัวข้อ','หัวข้อ'],lots:['เลขล็อต','สินค้า','จำนวน','ไลน์','กะ','ผู้ผลิต','วันที่'],units:['Serial','สินค้า','ล็อต','สถานะ','ชื่อเรียก'],inspections:['เวลา','Serial','สินค้า','ล็อต','ผู้ตรวจ','รอบที่','ผล','รหัสของเสีย','สาเหตุ','ค่าที่วัด','หมายเหตุ'],events:['เวลา','Serial','เหตุการณ์','โดย'],settings:['บริษัท','โรงงาน','เป้า %']};
 const dt=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
 const cols={
  products:r=>[r.sku,r.name,r.category,r.unit,getT(r.templateId)?.name||''],
  templates:r=>[r.name,r.items.length,r.items.map(i=>i.label).join(' | ')],
  lots:r=>[r.lotNo,getP(r.productId)?.name||'',r.qty,r.line,r.shift,r.operator,dt(r.ts)],
- units:r=>[r.sn,getP(r.productId)?.name||'',getL(r.lotId)?.lotNo||'',r.status],
+ units:r=>[r.sn,getP(r.productId)?.name||'',getL(r.lotId)?.lotNo||'',r.status,r.label||''],
 
  events:r=>[dt(r.ts),r.sn||'',r.text,r.by||''],
  settings:r=>[r.company,r.plant,r.target]};
@@ -42,7 +43,7 @@ async function pull(){const j=await get({action:'pull',since:st.last||0});let ch
   st.last=j.now;saveSt();if(changed){S.settings.demo=false;save()}return changed}
 /* ---- ส่งขึ้น Sheet ---- */
 async function push(){const rows=pendingRows();let n=0;
-  for(let i=0;i<rows.length;i+=150){const part=rows.slice(i,i+150),hdr={};part.forEach(x=>hdr[x.c]=HDR[x.c]);
+  for(let i=0;i<rows.length;i+=150){const part=rows.slice(i,i+150),hdr={};part.forEach(x=>hdr[x.c]=HDR[x.c].map(tr));
     await call({action:'push',hdr,rows:part.map(x=>({c:x.c,k:x.k,cols:cols[x.c](x.r),j:JSON.stringify(x.r)}))});part.forEach(x=>{st.snap[x.c+'|'+x.k]=hash(x.r)});n+=part.length;saveSt()}
   return n}
 async function photos(){let up=0;

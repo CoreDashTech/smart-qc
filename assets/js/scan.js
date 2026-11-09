@@ -1,7 +1,12 @@
 import {modal,closeModal,toast,ACT,ic} from './ui.js';
 let stream=null,raf=0,live=false;
-/* ดึง Serial จากข้อความที่สแกนได้ (รองรับ URL ที่มี #/trace/SN) */
-export function parseScan(t){t=String(t||'').trim();const m=t.match(/#\/(?:trace|inspect)\/([^/?\s]+)/);return m?decodeURIComponent(m[1]):t}
+/* ดึงรหัส/Serial จากข้อความที่สแกนได้ — รองรับ QR ภายนอก: ข้อความล้วน, "SN:xxx", URL ที่มี ?sn=, JSON {"sn":..} และ URL ของแอปนี้ (#/trace/SN) */
+export function parseScan(t){t=String(t||'').trim();if(!t)return'';
+  const m=t.match(/#\/(?:trace|inspect)\/([^/?\s]+)/);if(m)return decodeURIComponent(m[1]);
+  if(t[0]==='{'){try{const o=JSON.parse(t);for(const k of ['sn','SN','serial','Serial','serialNumber','id','ID','code'])if(o[k]!=null&&String(o[k]).trim())return String(o[k]).trim()}catch(e){}}
+  if(/^https?:\/\//i.test(t)){try{const u=new URL(t);for(const k of ['sn','serial','serialNumber','id','code','s'])if(u.searchParams.get(k))return u.searchParams.get(k).trim()}catch(e){}}
+  const p=t.match(/^(?:s\/?n|serial(?:\s*(?:no|number))?)\s*[:=#]\s*(.+)$/i);if(p)return p[1].trim();
+  return t.replace(/[\r\n]+/g,' ').slice(0,120)}
 export function stopScan(){live=false;cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}
 export async function openScanner(onResult){
   if(!navigator.mediaDevices?.getUserMedia)return toast('เบราว์เซอร์นี้ไม่รองรับกล้อง — ต้องเปิดผ่าน https (เช่น GitHub Pages)',4500);

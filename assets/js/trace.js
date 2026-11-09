@@ -1,6 +1,7 @@
 import {S,getP,getL,getT,unitBySn,lotStats,defName,getPhoto} from './store.js';
 import {ACT,IN,ic,refresh,chipV,go,modal} from './ui.js';
-import {openScanner} from './scan.js';
+import {openScanner,parseScan} from './scan.js';
+import {askRegister} from './inspect.js';
 import {esc,fNum,fPct,fDT,fDate,fTime} from './util.js';
 import {printLabels} from './products.js';
 import {code128,qrSvg} from './barcode.js';
@@ -8,7 +9,7 @@ export const title='ย้อนรอย';
 let q='';
 IN.tq=el=>{q=el.value;const box=document.getElementById('tres');if(box)box.innerHTML=results()};
 function results(){const s=q.trim().toLowerCase();if(!s)return`<div class="empty-s">พิมพ์ Serial, เลขล็อต หรือชื่อสินค้า เพื่อดูประวัติการผลิตและการตรวจ</div>`;
-  const us=S.units.filter(u=>u.sn.toLowerCase().includes(s)||(getL(u.lotId)?.lotNo||'').toLowerCase().includes(s)||(getP(u.productId)?.name||'').toLowerCase().includes(s)).sort((a,b)=>b.ts-a.ts||b.sn.localeCompare(a.sn));
+  const us=S.units.filter(u=>u.sn.toLowerCase().includes(s)||(getL(u.lotId)?.lotNo||'').toLowerCase().includes(s)||(getP(u.productId)?.name||'').toLowerCase().includes(s)||(u.label||'').toLowerCase().includes(s)).sort((a,b)=>b.ts-a.ts||b.sn.localeCompare(a.sn));
   const ls=S.lots.filter(l=>l.lotNo.toLowerCase().includes(s)).sort((a,b)=>b.ts-a.ts).slice(0,5);
   return(ls.length?`<div class="lab" style="all:unset;display:block;font-size:.74rem;letter-spacing:.06em;color:var(--mut);margin:6px 0">ล็อต</div><div class="rows">${ls.map(l=>`<a class="row" href="#/trace/${encodeURIComponent(l.lotNo)}"><span class="dot">${ic('layers')}</span><div class="m"><b class="mono">${esc(l.lotNo)}</b><small>${esc(getP(l.productId)?.name)} · ${esc(l.line)} · ${fDate(l.ts)}</small></div>${ic('chev')}</a>`).join('')}</div>`:'')+
   `<div style="font-size:.74rem;letter-spacing:.06em;color:var(--mut);margin:12px 0 6px">SERIAL (${fNum(us.length)})</div><div class="rows">${us.slice(0,40).map(u=>`<a class="row" href="#/trace/${encodeURIComponent(u.sn)}"><span class="dot ${u.status==='pass'?'ok':u.status==='fail'?'bad':''}">${ic('tag')}</span><div class="m"><b class="mono">${esc(u.sn)}</b><small>${esc(getP(u.productId)?.name)} · ${esc(getL(u.lotId)?.lotNo||'')}</small></div>${chipV(u.status)}${ic('chev')}</a>`).join('')||'<div class="empty-s">ไม่พบข้อมูล</div>'}</div>${us.length>40?`<div class="mut" style="text-align:center;padding:10px;font-size:.85rem">แสดง 40 จาก ${fNum(us.length)} — พิมพ์เพิ่มเพื่อกรอง</div>`:''}`}
@@ -23,9 +24,9 @@ function renderUnit(u){const p=getP(u.productId),lot=getL(u.lotId),ins=S.inspect
     ${i.results.map(r=>`<div class="mres"><span>${esc(r.label)}${r.critical?' <span class="crit">●</span>':''}</span><span class="mono">${r.type==='measure'?esc(r.value)+' '+esc(r.unit||''):(r.value==='ok'?'ผ่าน':'ไม่ผ่าน')}</span><span class="${r.ok?'okc':'badc'}">${r.ok?'✔':'✘'}</span></div>`).join('')}
     ${i.note?`<p style="margin:10px 0 0"><b>หมายเหตุ:</b> ${esc(i.note)}</p>`:''}${ph?`<img src="${ph}" alt="รูปประกอบ" style="width:100%;max-width:360px;border-radius:12px;margin-top:10px">`:''}</div></details>`}).join('');
   const sib=S.units.filter(x=>x.lotId===u.lotId);
-  return`<div class="ph"><a class="btn sm" href="#/trace">${ic('back')} ค้นหา</a><div><h1 class="mono" style="font-size:1.3rem">${esc(u.sn)}</h1><p>${esc(p?.name)}</p></div><div class="sp"></div>${chipV(u.status)}</div>
+  return`<div class="ph"><a class="btn sm" href="#/trace">${ic('back')} ค้นหา</a><div><h1 class="mono" style="font-size:1.3rem">${esc(u.sn)}</h1><p>${esc(p?.name)}${u.label?' · '+esc(u.label):''}</p></div><div class="sp"></div>${chipV(u.status)}</div>
   <div class="grid g21" style="align-items:start"><div style="display:grid;gap:16px">
-    <div class="card"><div class="kv"><div><small>สินค้า</small><b>${esc(p?.sku)}</b></div><div><small>ล็อต</small><b><a href="#/trace/${encodeURIComponent(lot?.lotNo||'')}" style="color:var(--accent)">${esc(lot?.lotNo||'-')}</a></b></div><div><small>ผลิต</small><b>${fDT(u.ts)}</b></div><div><small>ไลน์ / กะ</small><b>${esc(lot?.line||'-')} / ${esc(lot?.shift||'-')}</b></div><div><small>จำนวนครั้งที่ตรวจ</small><b>${ins.length}</b></div></div>
+    <div class="card"><div class="kv"><div><small>สินค้า</small><b>${esc(p?.sku)}</b></div>${u.label?`<div><small>ชื่อเรียก / ตำแหน่ง</small><b>${esc(u.label)}</b></div>`:''}<div><small>ล็อต</small><b><a href="#/trace/${encodeURIComponent(lot?.lotNo||'')}" style="color:var(--accent)">${esc(lot?.lotNo||'-')}</a></b></div><div><small>ผลิต</small><b>${fDT(u.ts)}</b></div><div><small>ไลน์ / กะ</small><b>${esc(lot?.line||'-')} / ${esc(lot?.shift||'-')}</b></div><div><small>จำนวนครั้งที่ตรวจ</small><b>${ins.length}</b></div></div>
     <div class="acts" style="margin-top:14px;justify-content:flex-start;flex-wrap:wrap">${u.status!=='scrap'?`<a class="btn pri" href="#/inspect/${encodeURIComponent(u.sn)}">${ic('scan')} ${ins.length?'ตรวจซ้ำ':'ตรวจชิ้นนี้'}</a>`:''}<button class="btn" data-act="printSn" data-sn="${esc(u.sn)}">${ic('print')} พิมพ์ป้าย</button><button class="btn" data-act="certSn" data-sn="${esc(u.sn)}">${ic('file')} ใบรับรองผลตรวจ</button></div></div>
     <div class="card"><h2>ประวัติการตรวจ</h2>${acc||'<div class="empty-s">ยังไม่เคยตรวจ</div>'}</div></div>
   <div style="display:grid;gap:16px"><div class="card"><h2>เส้นทางชิ้นงาน (Genealogy)</h2><ul class="tl">${tl.map(e=>`<li class="${e.cls}"><time>${fDate(e.ts)} ${fTime(e.ts)}</time><b>${esc(e.t)}</b><small>${esc(e.s)}</small></li>`).join('')}</ul></div>
@@ -40,6 +41,7 @@ ACT.certSn=el=>{const u=unitBySn(el.dataset.sn),p=getP(u.productId),lot=getL(u.l
   <table style="width:100%;border-collapse:collapse" border="1" cellpadding="6"><tr><th align="left">หัวข้อ</th><th>ค่าที่วัด</th><th>พิกัด</th><th>ผล</th></tr>${last.results.map(r=>`<tr><td>${esc(r.label)}</td><td align="center">${r.type==='measure'?esc(r.value)+' '+esc(r.unit||''):(r.value==='ok'?'OK':'NG')}</td><td align="center">${r.type==='measure'?(r.lsl??'')+' – '+(r.usl??''):'—'}</td><td align="center">${r.ok?'ผ่าน':'ไม่ผ่าน'}</td></tr>`).join('')}</table>
   <h2 style="margin-top:16px;color:${last.verdict==='PASS'?'#1f8a5b':'#c8352b'}">ผลสรุป: ${last.verdict==='PASS'?'ผ่าน (PASS)':'ไม่ผ่าน (FAIL)'}</h2><p style="margin-top:36px">ลงชื่อ ____________________ ผู้ตรวจ &nbsp;&nbsp;&nbsp;&nbsp; วันที่ ____________</p></div>`;setTimeout(()=>window.print(),120)};
 export function render(p){if(!p[0])return renderSearch();const k=decodeURIComponent(p[0]);const u=unitBySn(k);if(u)return renderUnit(u);const l=S.lots.find(l=>l.lotNo.toLowerCase()===k.toLowerCase());if(l)return renderLot(l);
-  return`<div class="card empty"><div class="big">🔎</div><h2>ไม่พบ “${esc(k)}”</h2><a class="btn pri" href="#/trace">ค้นหาใหม่</a></div>`}
+  return`<div class="card empty"><div class="big">🔎</div><h2>ไม่พบ “${esc(k)}”</h2><div class="acts" style="justify-content:center"><a class="btn" href="#/trace">ค้นหาใหม่</a><button class="btn pri" data-act="regFromTrace" data-v="${esc(k)}">ลงทะเบียนโค้ดนี้</button></div></div>`}
+ACT.regFromTrace=el=>askRegister(el.dataset.v,{back:'/trace/'+encodeURIComponent(el.dataset.v)});
 
 ACT.camTrace=()=>openScanner(v=>go('/trace/'+encodeURIComponent(v)));
