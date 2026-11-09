@@ -18,7 +18,7 @@ edit:'<path d="M4 20h4L19 9l-4-4L4 16v4z"/>',qr:'<rect x="3" y="3" width="7" hei
 factory:'<path d="M3 21V9l6 4V9l6 4V5h6v16H3z"/>',up:'<path d="M12 19V5m0 0l-5 5m5-5l5 5"/>',layers:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
 bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>',share:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.1"/>'};
 export const ic=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${P[n]||''}</svg>`;
-export const logo=`<svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a3d"/><stop offset="1" stop-color="#ff5a1f"/></linearGradient></defs><path d="M20 2l15 8.5v19L20 38 5 29.5v-19L20 2z" fill="url(#lg)"/><path d="M26.5 14.5a8 8 0 100 11" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/><path d="M19 20.2l2.6 2.6 4.8-5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity="0"/></svg>`;
+export const logo=`<img src="assets/brand/logo-96.png" alt="CoreDash Technology" width="42" height="53">`;
 export const ACT={},IN={};
 export let refresh=()=>{};export const setRefresh=f=>{refresh=f};
 export const go=h=>{if(location.hash==='#'+h)refresh();else location.hash=h};

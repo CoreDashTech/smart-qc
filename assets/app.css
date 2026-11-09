@@ -101,3 +101,6 @@ svg.dn .dnv{font:700 20px var(--mono);fill:var(--ink)}svg.dn .dns{font:500 9px v
 .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}.seg button{white-space:nowrap}.tbl th,.tbl td{white-space:nowrap}
 @media(max-width:1023px){.toast{bottom:auto!important;top:68px;left:50%;transform:translateX(-50%)}}
 @keyframes spin{to{transform:rotate(360deg)}}.ib.spin svg{animation:spin 1s linear infinite}
+
+.brand img{height:44px;width:auto;flex:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}.brand svg{display:none}
+.brand img{height:54px}.mlogo{display:none}@media(max-width:1023px){.mlogo{display:block;height:38px;width:auto}}
