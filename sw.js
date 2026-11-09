@@ -1,0 +1,6 @@
+const V='cdq-v2',A=['./','index.html','manifest.webmanifest','assets/app.css','assets/icons/icon.svg','assets/icons/icon-192.png','assets/js/main.js','assets/js/store.js','assets/js/ui.js','assets/js/util.js','assets/js/charts.js','assets/js/barcode.js','assets/js/qrcode.js','assets/js/xlsx.js','assets/js/dashboard.js','assets/js/products.js','assets/js/inspect.js','assets/js/trace.js','assets/js/reports.js','assets/js/settings.js','assets/js/sync.js','assets/js/scan.js','assets/js/jsqr.js'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(A)).then(()=>self.skipWaiting()))});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
+self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);
+  if(u.origin===location.origin){e.respondWith(fetch(r).then(res=>{const cp=res.clone();caches.open(V).then(c=>c.put(r,cp));return res}).catch(()=>caches.match(r).then(m=>m||caches.match('index.html'))))}
+  else if(u.host.includes('fonts.g')){e.respondWith(caches.match(r).then(m=>m||fetch(r).then(res=>{const cp=res.clone();caches.open(V).then(c=>c.put(r,cp));return res})))}});

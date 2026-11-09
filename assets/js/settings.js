@@ -1,0 +1,58 @@
+import {S,save,reset,exportJSON,importJSON,DEFECTS} from './store.js';
+import {ACT,IN,ic,refresh,modal,closeModal,toast,ask} from './ui.js';
+import {getCfg,getStatus,ping,connect,disconnect,syncNow,pendingCount} from './sync.js';
+import {esc,fNum,download,uid,pad} from './util.js';
+export const title='ตั้งค่า';
+const lines=a=>a.join('\n'),parse=s=>s.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+export function render(){const bytes=new Blob([JSON.stringify(S)]).size;
+  return`<div class="ph"><div><h1>ตั้งค่าระบบ</h1><p>ปรับให้เข้ากับโรงงานของคุณ — บันทึกอัตโนมัติเมื่อกด “บันทึก”</p></div></div>
+  <div class="grid g2" style="align-items:start"><div style="display:grid;gap:16px">
+   <form class="card" id="setf"><h2>ข้อมูลโรงงาน</h2>
+    <div class="f"><label>ชื่อบริษัท / ระบบ</label><input class="in" name="company" value="${esc(S.settings.company)}"></div>
+    <div class="f"><label>ชื่อโรงงาน / สถานที่</label><input class="in" name="plant" value="${esc(S.settings.plant)}"></div>
+    <div class="f"><label>เป้าหมายอัตราผ่าน (%)</label><input class="in mono" name="target" inputmode="decimal" value="${S.settings.target}"></div>
+    <div class="f"><label>ไลน์ผลิต (หนึ่งบรรทัดต่อหนึ่งรายการ)</label><textarea class="in" name="lines" rows="3">${esc(lines(S.settings.lines))}</textarea></div>
+    <div class="f"><label>พนักงานผลิต</label><textarea class="in" name="operators" rows="3">${esc(lines(S.settings.operators))}</textarea></div>
+    <div class="f"><label>ผู้ตรวจ QC</label><textarea class="in" name="inspectors" rows="3">${esc(lines(S.settings.inspectors))}</textarea></div>
+    <div class="acts"><button class="btn pri">${ic('check')} บันทึก</button></div></form>
+   <div class="card"><h2>หน้าตา</h2><div class="seg">${[['auto','อัตโนมัติ'],['light','สว่าง'],['dark','มืด']].map(([v,t])=>`<button class="${(S.settings.theme||'auto')===v?'on':''}" data-act="setTheme" data-v="${v}" type="button">${t}</button>`).join('')}</div></div></div>
+  <div style="display:grid;gap:16px"><div class="card"><div class="ch-h"><h2>แม่แบบการตรวจ (QC Plan)</h2><span class="sp"></span><button class="btn sm" data-act="tplEdit" data-id="">${ic('plus')} สร้างใหม่</button></div>
+    <div class="rows">${S.templates.map(t=>{const n=S.products.filter(p=>p.templateId===t.id).length;return`<div class="row" data-act="tplEdit" data-id="${t.id}"><span class="dot">${ic('file')}</span><div class="m"><b>${esc(t.name)}</b><small>${t.items.length} หัวข้อ · ใช้กับ ${n} สินค้า</small></div>${ic('edit')}</div>`}).join('')||'<div class="empty-s">ยังไม่มีแม่แบบ</div>'}</div></div>
+   <div class="card"><h2>รหัสของเสีย</h2><div style="display:flex;flex-wrap:wrap;gap:8px">${DEFECTS.map(([c,n])=>`<span class="chip"><b class="mono">${c}</b>&nbsp;${esc(n)}</span>`).join('')}</div></div>
+   <div class="card" id="cloud"><div class="ch-h"><h2>เชื่อมต่อ Google Sheet</h2><span class="sp"></span>${cloudChip()}</div>
+    ${getCfg()?`<p class="mut" style="margin:0 0 10px;font-size:.9rem">ข้อมูลทุกเครื่องซิงก์เข้า Google Sheet อัตโนมัติ · ${esc(cloudLast())} · รอส่ง ${pendingCount()} รายการ</p><div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn pri" data-act="syncNow">ซิงก์ตอนนี้</button><button class="btn danger" data-act="cloudOff">ยกเลิกการเชื่อมต่อ</button></div>`
+    :`<p class="mut" style="margin:0 0 12px;font-size:.9rem">ใช้งานหลายเครื่อง/หลายคนพร้อมกัน และเก็บข้อมูลใน Google Sheet ของคุณเอง — ดูขั้นตอนใน <b>SETUP-GoogleSheet.md</b></p><form id="cloudf"><div class="f"><label>Web App URL (จาก Apps Script)</label><input class="in mono" name="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div><div class="f"><label>รหัสลับ (Token)</label><input class="in mono" name="token" type="password" autocomplete="off"></div><div class="acts"><button class="btn pri">${ic('check')} ทดสอบ & เชื่อมต่อ</button></div></form>`}</div>
+   <div class="card"><h2>สำรอง / กู้คืนข้อมูล</h2><p class="mut" style="margin:0 0 12px;font-size:.9rem">ข้อมูลเก็บในเครื่องนี้ (${fNum(bytes/1024)} KB) — แนะนำสำรองเป็นประจำ</p>
+    <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn" data-act="bkExport">${ic('download')} สำรองข้อมูล</button><label class="btn">${ic('up')} กู้คืน<input type="file" accept=".json,application/json" hidden data-in="bkImport"></label></div></div>
+   <div class="card"><h2>เริ่มใหม่</h2><div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn" data-act="loadDemo">โหลดข้อมูลตัวอย่าง</button><button class="btn danger" data-act="wipe">${ic('trash')} ล้างข้อมูลทั้งหมด</button></div></div>
+   <div class="card"><h2>เกี่ยวกับ</h2><p class="mut" style="margin:0;font-size:.9rem">CoreDash Smart QC v1.0 · ระบบตรวจสอบคุณภาพและติดตามประวัติการผลิตสำหรับโรงงาน SME<br>© CoreDash Technology</p></div></div></div>`}
+const cloudChip=()=>{const m=getStatus().mode;return getCfg()?(m==='ok'?'<span class="chip ok">เชื่อมต่อแล้ว</span>':m==='busy'?'<span class="chip info">กำลังซิงก์</span>':m==='offline'?'<span class="chip warn">ออฟไลน์</span>':'<span class="chip bad">ผิดพลาด</span>'):'<span class="chip">ยังไม่เชื่อมต่อ</span>'};
+const cloudLast=()=>{const t=getStatus().last;return t?'ซิงก์ล่าสุด '+new Date(t).toLocaleString('th-TH'):'ยังไม่เคยซิงก์'};
+ACT.syncNow=async()=>{try{await syncNow();toast('ซิงก์แล้ว')}catch(e){toast('ซิงก์ไม่สำเร็จ: '+e.message,5000)}refresh()};
+ACT.cloudOff=async()=>{if(await ask('ยกเลิกการเชื่อมต่อ','ข้อมูลบนเครื่องนี้ยังอยู่ แต่จะไม่ซิงก์กับ Google Sheet อีก','ยกเลิกการเชื่อมต่อ','danger')){disconnect();window.dispatchEvent(new Event('cdq-shell'));refresh()}};
+export function mount(){const cf=document.getElementById('cloudf');if(cf)cf.onsubmit=async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(cf)),btn=cf.querySelector('button');btn.disabled=true;
+  try{const r=await ping(d.url.trim(),d.token.trim());
+   if(S.settings.demo&&!await ask('เชื่อมต่อ “'+r.name+'”','ข้อมูลตัวอย่างบนเครื่องนี้จะถูกล้าง (ไม่ส่งขึ้น Sheet) แล้วดึงข้อมูลจริงจาก Sheet มาแทน','เชื่อมต่อ','pri')){btn.disabled=false;return}
+   if(S.settings.demo)reset(false);connect(d.url,d.token);await syncNow();toast('เชื่อมต่อ Google Sheet แล้ว');window.dispatchEvent(new Event('cdq-shell'));refresh()}
+  catch(err){btn.disabled=false;toast('เชื่อมต่อไม่ได้: '+err.message+' — ตรวจ URL / Token / การตั้งค่า Deploy',6000)}};
+const f=document.getElementById('setf');if(f)f.onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(f));const t=parseFloat(d.target);
+  Object.assign(S.settings,{company:d.company.trim()||'CoreDash Smart QC',plant:d.plant.trim(),target:isNaN(t)?95:Math.min(100,Math.max(1,t)),lines:parse(d.lines).length?parse(d.lines):['Line A'],operators:parse(d.operators).length?parse(d.operators):['พนักงาน'],inspectors:parse(d.inspectors).length?parse(d.inspectors):['QC']});save();toast('บันทึกแล้ว');window.dispatchEvent(new Event('cdq-shell'));refresh()}}
+ACT.setTheme=el=>{S.settings.theme=el.dataset.v;save();window.dispatchEvent(new Event('cdq-theme'));refresh()};
+ACT.bkExport=()=>{const d=new Date();download(`coredash-qc-backup-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`,new Blob([exportJSON()],{type:'application/json'}))};
+IN.bkImport=async el=>{const f=el.files[0];if(!f)return;if(!await ask('กู้คืนข้อมูล','ข้อมูลปัจจุบันจะถูกแทนที่ด้วยข้อมูลจากไฟล์สำรอง','กู้คืน','danger'))return;try{importJSON(await f.text());toast('กู้คืนข้อมูลแล้ว');window.dispatchEvent(new Event('cdq-shell'));refresh()}catch(e){toast('ไฟล์ไม่ถูกต้อง: '+e.message,4000)}};
+ACT.loadDemo=async()=>{if(await ask('โหลดข้อมูลตัวอย่าง','ข้อมูลปัจจุบันจะถูกแทนที่ด้วยข้อมูลตัวอย่าง 14 วัน','โหลด','pri')){reset(true);toast('โหลดข้อมูลตัวอย่างแล้ว');window.dispatchEvent(new Event('cdq-shell'));refresh()}};
+ACT.wipe=async()=>{if(await ask('ล้างข้อมูลทั้งหมด','ลบสินค้า ล็อต Serial และผลตรวจทั้งหมด (กู้คืนไม่ได้ — ควรสำรองก่อน)','ล้างข้อมูล','danger')){reset(false);toast('ล้างข้อมูลแล้ว — เริ่มต้นใช้งานจากเมนู “สินค้า”');window.dispatchEvent(new Event('cdq-shell'));refresh()}};
+/* ---- ตัวแก้ไขแม่แบบ ---- */
+const irow=it=>`<div class="tpi" style="display:grid;grid-template-columns:92px 1fr;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--surface2)"><select class="in" data-f="type"><option value="check" ${it.type==='check'?'selected':''}>ติ๊กผ่าน</option><option value="measure" ${it.type==='measure'?'selected':''}>วัดค่า</option></select><input class="in" data-f="label" value="${esc(it.label||'')}" placeholder="ชื่อหัวข้อ เช่น ความยาว">
+ <div style="grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="ms-f" style="display:${it.type==='measure'?'flex':'none'};gap:6px;flex-wrap:wrap;flex:1"><input class="in mono" data-f="lsl" inputmode="decimal" placeholder="ต่ำสุด" value="${it.lsl??''}" style="width:76px"><input class="in mono" data-f="nominal" inputmode="decimal" placeholder="ค่ากลาง" value="${it.nominal??''}" style="width:76px"><input class="in mono" data-f="usl" inputmode="decimal" placeholder="สูงสุด" value="${it.usl??''}" style="width:76px"><input class="in" data-f="unit" placeholder="หน่วย" value="${esc(it.unit||'')}" style="width:64px"></span>
+ <label style="display:flex;gap:6px;align-items:center;font-size:.85rem"><input type="checkbox" data-f="critical" ${it.critical?'checked':''}> วิกฤต</label><button type="button" class="btn sm danger" data-act="tpDel">${ic('trash')}</button></div></div>`;
+ACT.tplEdit=el=>{const t=S.templates.find(x=>x.id===el.dataset.id)||{id:'',name:'',items:[{type:'check',label:''}]};
+  modal(`<h2>${t.id?'แก้ไข':'สร้าง'}แม่แบบการตรวจ</h2><form id="tpf" data-id="${t.id}"><div class="f"><label>ชื่อแม่แบบ</label><input class="in" name="name" value="${esc(t.name)}" required></div><label style="font-size:.82rem;font-weight:600;color:var(--mut)">หัวข้อการตรวจ</label><div id="tpi" style="margin-top:6px">${t.items.map(irow).join('')}</div>
+   <button type="button" class="btn sm" data-act="tpAdd">${ic('plus')} เพิ่มหัวข้อ</button><div class="acts"><button type="button" class="btn" data-act="mClose2">ยกเลิก</button><button class="btn pri">บันทึก</button></div></form>`,{wide:true});
+  const form=document.getElementById('tpf');form.addEventListener('change',e=>{if(e.target.dataset.f==='type'){e.target.closest('.tpi').querySelector('.ms-f').style.display=e.target.value==='measure'?'flex':'none'}});
+  form.onsubmit=e=>{e.preventDefault();const num=v=>{v=String(v).trim().replace(',','.');return v===''||isNaN(+v)?null:+v};
+    const items=[...form.querySelectorAll('.tpi')].map((r,i)=>{const g=k=>r.querySelector(`[data-f=${k}]`),type=g('type').value,o={id:'i'+(i+1),label:g('label').value.trim(),type,critical:g('critical').checked};if(type==='measure'){o.lsl=num(g('lsl').value);o.usl=num(g('usl').value);o.nominal=num(g('nominal').value);o.unit=g('unit').value.trim()}return o}).filter(x=>x.label);
+    if(!items.length)return toast('ต้องมีอย่างน้อย 1 หัวข้อ');const bad=items.find(x=>x.type==='measure'&&x.lsl==null&&x.usl==null);if(bad)return toast(`หัวข้อ “${bad.label}” ต้องใส่ค่าต่ำสุดหรือสูงสุดอย่างน้อยหนึ่งค่า`,3600);
+    const nm=new FormData(form).get('name').trim();if(t.id){const tt=S.templates.find(x=>x.id===t.id);tt.name=nm;tt.items=items}else S.templates.push({id:uid('t'),name:nm,items});save();closeModal();toast('บันทึกแม่แบบแล้ว');refresh()}};
+ACT.tpAdd=()=>{const d=document.createElement('div');d.innerHTML=irow({type:'check',label:''});document.getElementById('tpi').appendChild(d.firstElementChild)};
+ACT.tpDel=el=>{const l=document.querySelectorAll('#tpi .tpi');if(l.length<=1)return toast('ต้องมีอย่างน้อย 1 หัวข้อ');el.closest('.tpi').remove()};
