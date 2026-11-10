@@ -23,8 +23,12 @@ function registerUnit(sn,pid,label,meta){let lot=S.lots.filter(l=>l.productId===
   if(!lot)lot=createLot({productId:pid,qty:0,line:S.settings.lines[0],shift:'A',operator:S.settings.operators[0]});addUnits({lotId:lot.id,sns:[sn]});
   const nu=unitBySn(sn);if(nu){if(label)nu.label=label;if(meta)nu.meta=meta}save();return nu}
 let pend=null;
+function boardProduct(model){const had=S.products.some(x=>x.sku===model);const p=ensureBoardProduct(model);if(!had)toast('สร้างสินค้า “บอร์ดมิเตอร์ '+model+'” ให้อัตโนมัติ');return p}
 export function submitSn(raw,opt={}){const sn=parseScan(raw);if(!sn)return;const meta=parseBoard(raw),u=unitBySn(sn);
+  if(u&&meta&&meta.model){const cp=S.products.find(x=>x.id===u.productId);if(!cp||cp.sku!==meta.model){/* ลงทะเบียนผิดสินค้าไว้ → ย้ายไปสินค้าตามรุ่นใน QR */
+    const p=boardProduct(meta.model);let lot=S.lots.filter(l=>l.productId===p.id).sort((a,b)=>b.ts-a.ts)[0];if(!lot)lot=createLot({productId:p.id,qty:0,line:S.settings.lines[0],shift:'A',operator:S.settings.operators[0]});u.productId=p.id;u.lotId=lot.id}}
   if(u){if(meta){u.meta=meta;save()}return go((opt.to||'/inspect/')+encodeURIComponent(u.sn))}
+  if(meta&&meta.model){const p=boardProduct(meta.model);registerUnit(sn,p.id,String(raw).trim().slice(0,80),meta);toast('ลงทะเบียนแล้ว · '+sn);return go('/inspect/'+encodeURIComponent(sn))}
   if(!S.products.length){pend={sn,meta,raw,opt};return meta?modal(`<h2>ยังไม่มีสินค้าในระบบ</h2><p class="mut">พบ QR บอร์ดมิเตอร์: Meter ID <b class="mono">${esc(meta.id)}</b> · ${esc(meta.model||meta.hw)}${meta.fw?' · '+esc(meta.fw):''}${meta.ua!=null?' · '+meta.ua+' µA':''}<br>ให้ระบบสร้างสินค้า “บอร์ดมิเตอร์ ${esc(meta.model||'SMCV4')}” พร้อมแม่แบบตรวจ (กระแส + ตรวจสายตา + จอ LCD) แล้วลงทะเบียนเลยไหม</p><div class="acts"><button class="btn" data-act="mClose2">ยกเลิก</button><button class="btn pri" data-act="mkBoard">สร้างและลงทะเบียน</button></div>`):askRegister(sn,opt)}
   const mp=meta&&meta.model&&S.products.find(x=>x.sku===meta.model);
   if(mp){registerUnit(sn,mp.id,String(raw).trim().slice(0,80),meta);toast('ลงทะเบียนแล้ว · '+sn);return go('/inspect/'+encodeURIComponent(sn))}
