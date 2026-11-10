@@ -1,5 +1,14 @@
 /* พจนานุกรมไทย → อังกฤษ (ประโยคที่ถูกตัดตามตัวแปรออกเป็นท่อน ๆ ให้ต่อกันเป็นประโยคที่ถูกต้อง) */
 export default {
+"สแกนด้วยกล้อง/สแกน QR ของมือถือ แล้วส่งเข้าแอป": "Scan with the phone camera / QR scanner and send it to the app",
+"เปิดแอปกล้องมือถือ หรือแตะปุ่ม": "Open the phone camera, or tap",
+"ในแถบการตั้งค่าด่วน (ปัดจอลง) แล้วเล็งที่ QR": "in the quick settings panel (swipe down), then aim at the QR",
+"สแกน QR": "Scan QR",
+"ถ้า QR เป็นลิงก์ของระบบนี้ กดลิงก์ได้เลย แอปจะเปิดหน้าตรวจของชิ้นนั้น": "If the QR is a link from this system, tap it and the app opens that unit's inspection page",
+"ถ้า QR เป็นข้อความธรรมดา (เช่น QR ที่ติดมากับบอร์ด) กด": "If the QR is plain text (e.g. one that came with the board), tap",
+"แชร์": "Share",
+"ข้อมูลจะเข้าแอปทันที แล้วลงทะเบียน/บันทึกผลตรวจ ซึ่งซิงก์เข้า Google Sheet ให้ถ้าเชื่อมไว้": "The data goes straight into the app; register / record the result and it syncs to Google Sheet if connected",
+"ตัวเลือก Smart QC ใน “แชร์” จะขึ้นเมื่อติดตั้งแอปจากเบราว์เซอร์แล้ว (หากเพิ่งอัปเดต ให้เปิดแอปทิ้งไว้สักครู่หรือติดตั้งใหม่)": "The Smart QC option in “Share” appears once the app is installed from the browser (if just updated, leave the app open for a while or reinstall)",
 "เปิดกล้องสดไม่ได้": "Can't open the live camera",
 "ต้องเปิดเว็บผ่าน https (เช่น GitHub Pages) จึงจะใช้กล้องสดได้": "The page must be opened over https (e.g. GitHub Pages) to use the live camera",
 "ไม่พบกล้องในเครื่องนี้": "No camera found on this device",
