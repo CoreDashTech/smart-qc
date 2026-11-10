@@ -27,6 +27,7 @@ const hash=o=>{const s=JSON.stringify(o);let h=5381;for(let i=0;i<s.length;i++)h
 const settingsRec=()=>{const o={...S.settings};SKIPSET.forEach(k=>delete o[k]);return o};
 function* records(){for(const c in COLS)for(const r of S[c])yield[c,keyOf(c,r),r];yield['settings','main',settingsRec()]}
 function pendingRows(){const out=[];for(const[c,k,r]of records()){if(st.snap[c+'|'+k]!==hash(r))out.push({c,k,r})}return out}
+export function resetPushed(){st.snap={};saveSt()}
 export function pendingCount(){return cfg?pendingRows().length:0}
 async function call(body){const r=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:cfg.token,...body})});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(!j.ok)throw new Error(j.error||'เซิร์ฟเวอร์ตอบกลับผิดพลาด');return j}
 async function get(q){const u=new URL(cfg.url);u.searchParams.set('token',cfg.token);Object.entries(q).forEach(([k,v])=>u.searchParams.set(k,v));const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(!j.ok)throw new Error(j.error||'เซิร์ฟเวอร์ตอบกลับผิดพลาด');return j}
