@@ -6,18 +6,19 @@ export function parseScan(t){t=String(t||'').trim();if(!t)return'';
   if(t[0]==='{'){try{const o=JSON.parse(t);for(const k of ['sn','SN','serial','Serial','serialNumber','id','ID','code'])if(o[k]!=null&&String(o[k]).trim())return String(o[k]).trim()}catch(e){}}
   if(/^https?:\/\//i.test(t)){try{const u=new URL(t);for(const k of ['sn','serial','serialNumber','id','code','s'])if(u.searchParams.get(k))return u.searchParams.get(k).trim()}catch(e){}}
   const sm=t.match(/^SMC(?:V)?4[-_:]?(\d{6,12})(?:uA\d+)?$/i);if(sm)return sm[1];
-  const idm=t.match(/(?<![A-Za-z])ID[:=]?(\d{6,12})/i);if(idm&&/^[A-Za-z0-9_\-:=.]+$/.test(t)&&t.length>=14)return idm[1];/* QR ของบอร์ดแบบ HW03RND04ID69051325uA1050 → ใช้ Meter ID */
+  const bd=parseBoard(t);if(bd)return bd.id;/* QR ของบอร์ดแบบ HW03RND04ID69051325uA1050 → ใช้ Meter ID */
   const p=t.match(/^(?:s\/?n|serial(?:\s*(?:no|number))?)\s*[:=#]\s*(.+)$/i);if(p)return p[1].trim();
   return t.replace(/[\r\n]+/g,' ').slice(0,120)}
 /* QR บอร์ดมิเตอร์ เช่น HW03RND04ID69051325uA1050 → รุ่น HW, รอบ RND, Meter ID, กระแส µA (uA1050 = 10.50 µA) */
-const FW={RND04:'GMCV3-V3.5'},HWM={HW03:'GMCV3'};
+const FW={RND04:'GMCV3-V3.5'},HWM={HW03:'GMCV3',HW04:'SMCV4'};
+/* รูปแบบ: HW03RND04ID69051325uA1050 (GMCV3) · HW04RND150-69050015[uA1700] (SMCV4: RND150 = เฟิร์มแวร์ 1.5.0, uA1700 = 17.00 µA, ไม่มี = ว่าง) · SMC469050017 */
 export function parseBoard(raw){const t=String(raw||'').trim();
-  const sm=t.match(/^SMC(?:V)?4[-_:]?(\d{6,12})(?:uA(\d+))?$/i);/* SMCV4 : SMC4 + Meter ID (+ กระแส ภายหลัง) */
+  const sm=t.match(/^SMC(?:V)?4[-_:]?(\d{6,12})(?:[-_:]?uA(\d+))?$/i);
   if(sm)return{id:sm[1],model:'SMCV4',hw:'',rnd:'',fw:'',ua:sm[2]?+(sm[2]/100).toFixed(2):null,raw:t};
-  const id=t.match(/(?<![A-Za-z])ID[:=]?(\d{6,12})/i);if(!id||!/^[A-Za-z0-9_\-:=.]+$/.test(t))return null;
-  const hw=t.match(/HW(\d+)/i),rnd=t.match(/RND(\d+)/i),ua=t.match(/uA(\d+)/i);if(!hw&&!ua&&!rnd)return null;
-  const H=hw?'HW'+hw[1]:'',R=rnd?'RND'+rnd[1]:'';
-  return{id:id[1],model:HWM[H]||'',hw:H,rnd:R,fw:FW[R]||'',ua:ua?+(ua[1]/100).toFixed(2):null,raw:t}}
+  const m=t.match(/^HW(\d+)[-_:]?RND(\d+)[-_:\s]?(?:ID[:=]?)?(\d{6,12})(?:[-_:]?uA(\d+))?$/i);if(!m)return null;
+  const H='HW'+m[1],R='RND'+m[2],model=HWM[H]||'';
+  let fw=FW[R]||'';if(!fw&&m[2].length===3)fw=(model?model+'-':'')+'V'+m[2].split('').join('.');
+  return{id:m[3],model,hw:H,rnd:R,fw,ua:m[4]?+(m[4]/100).toFixed(2):null,raw:t}}
 export function stopScan(){live=false;cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}
 const wk=document.createElement('canvas'),wx=wk.getContext('2d',{willReadFrequently:true});
 /* ถอดรหัสจากส่วนหนึ่งของภาพ (ความละเอียดเต็มของส่วนนั้น) */

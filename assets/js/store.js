@@ -77,5 +77,5 @@ export function importJSON(txt){const j=JSON.parse(txt);if(j.app!=='coredash-sma
 
 /* สินค้า+แม่แบบตรวจตั้งต้นสำหรับบอร์ดมิเตอร์ SMCV4 (พิกัดกระแสเป็นค่าตั้งต้น ปรับได้ที่เมนูสินค้า) */
 export function ensureBoardProduct(model='SMCV4'){let p=S.products.find(x=>x.sku===model);if(p)return p;
-  const t={id:uid('t'),name:'ตรวจบอร์ดมิเตอร์ '+model,items:[{id:'i1',label:'กระแสขณะวัด',type:'measure',nominal:null,lsl:0,usl:15,unit:'µA',critical:true},{id:'i2',label:'ตรวจด้วยสายตา: บัดกรี/ชิ้นส่วนครบ',type:'check',critical:false},{id:'i3',label:'จอ LCD แสดงผลปกติ',type:'check',critical:true}]};
+  const t={id:uid('t'),name:'ตรวจบอร์ดมิเตอร์ '+model,items:[{id:'i1',label:'กระแสขณะวัด',type:'measure',nominal:null,lsl:0,usl:model==='SMCV4'?20:15,unit:'µA',critical:true},{id:'i2',label:'ตรวจด้วยสายตา: บัดกรี/ชิ้นส่วนครบ',type:'check',critical:false},{id:'i3',label:'จอ LCD แสดงผลปกติ',type:'check',critical:true}]};
   S.templates.push(t);p={id:uid('p'),sku:model,name:'บอร์ดมิเตอร์ '+model,category:'อิเล็กทรอนิกส์',templateId:t.id,unit:'ชิ้น',ts:Date.now()};S.products.push(p);save();return p}
