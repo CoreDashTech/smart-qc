@@ -1,3 +1,4 @@
+import {applyLook,clearBg} from './look.js';
 import {S,init,onChange,unitBySn,save} from './store.js';
 import {ACT,IN,ic,logo,setRefresh,go,toast,closeModal} from './ui.js';
 import {esc} from './util.js';
@@ -8,14 +9,14 @@ const R={dashboard,products,inspect,trace,reports,settings};
 const NAV=[['dashboard','dash','ภาพรวม'],['products','box','สินค้า & Serial'],['inspect','scan','ตรวจ QC'],['trace','trace','ย้อนรอย'],['reports','chart','รายงาน']];
 let cur='dashboard',deferred=null;
 function theme(){const t=S.settings.theme||'auto';document.documentElement.dataset.theme=t==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;
-  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=document.documentElement.dataset.theme==='dark'?'#101114':'#f6f4ef'}
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=document.documentElement.dataset.theme==='dark'?'#101114':'#f6f4ef';applyLook()}
 function shell(){const app=document.getElementById('app');
   app.innerHTML=`<aside class="side"><a class="brand" href="#/dashboard">${logo}<div><b>CoreDash</b><small>Smart QC</small></div></a><nav class="nav" aria-label="เมนูหลัก">${NAV.map(([k,i,t])=>`<a href="#/${k}" data-nav="${k}">${ic(i)}<span>${t}</span></a>`).join('')}<a href="#/settings" data-nav="settings">${ic('gear')}<span>ตั้งค่า</span></a></nav><div class="sp"></div><div class="plant"><b>${esc(S.settings.company)}</b><small>${esc(S.settings.plant)}</small></div><button class="btn sm" id="inst" style="display:none;margin:8px">${ic('download')} ติดตั้งแอป</button></aside>
   <div class="main"><header class="top"><img class="mlogo" src="assets/brand/logo-96.png" alt="CoreDash" width="30" height="38"><span class="crumb"><b id="crumb"></b></span><span class="sp"></span><form class="gs" id="gsf" role="search">${ic('search')}<input id="gs" placeholder="ค้นหา Serial / ล็อต…" autocomplete="off" aria-label="ค้นหา"></form><button class="ib" id="cld" aria-label="ซิงก์" title="ซิงก์ข้อมูล" style="position:relative">${ic('up')}<i id="cdot" style="position:absolute;right:7px;top:7px;width:9px;height:9px;border-radius:50%;background:var(--mut);border:2px solid var(--surface)"></i></button><button class="ib" id="lng" data-nt aria-label="Language" title="Language / ภาษา" style="font-weight:700;font-size:.8rem;width:auto;padding:0 12px">${lang==='en'?'ไทย':'EN'}</button><button class="ib" id="thm" aria-label="สลับธีม">${ic('moon')}</button><a class="ib" href="#/settings" aria-label="ตั้งค่า">${ic('gear')}</a></header><main id="view" tabindex="-1"></main></div>
   <nav class="bnav" aria-label="เมนู">${NAV.map(([k,i,t],n)=>n===2?`<a class="mid" href="#/inspect" data-nav="inspect"><span class="fab">${ic('scan')}</span><span>ตรวจ</span></a>`:`<a href="#/${k}" data-nav="${k}">${ic(i)}<span>${t.split(' ')[0]}</span></a>`).join('')}</nav>`;
   document.getElementById('gsf').onsubmit=e=>{e.preventDefault();const v=document.getElementById('gs').value.trim();if(!v)return;document.getElementById('gs').value='';const u=unitBySn(v);go(u?'/inspect/'+encodeURIComponent(u.sn):'/trace/'+encodeURIComponent(v))};
   document.getElementById('lng').onclick=()=>setLang(lang==='en'?'th':'en');
-  document.getElementById('thm').onclick=()=>{const d=document.documentElement.dataset.theme==='dark';S.settings.theme=d?'light':'dark';save();theme()};
+  document.getElementById('thm').onclick=()=>{const d=document.documentElement.dataset.theme==='dark';clearBg();S.settings.theme=d?'light':'dark';save();theme()};
   document.getElementById('cld').onclick=()=>{if(isOn())syncNow().then(()=>toast('ซิงก์แล้ว')).catch(e=>toast(e.message,5000));else go('/settings')};paintCloud();
   const ib=document.getElementById('inst');ib.onclick=async()=>{if(!deferred)return;deferred.prompt();await deferred.userChoice;deferred=null;ib.style.display='none'};if(deferred)ib.style.display='';}
 function paintCloud(){const b=document.getElementById('cld'),d=document.getElementById('cdot');if(!b)return;const s=getStatus();b.style.display='';
