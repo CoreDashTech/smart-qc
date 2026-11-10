@@ -1,9 +1,9 @@
 import {applyLook,clearBg} from './look.js';import {VER_TEXT} from './version.js';
-import {S,init,onChange,unitBySn,save} from './store.js';
+import {S,init,onChange,unitBySn,save,reset} from './store.js';
 import {ACT,IN,ic,logo,setRefresh,go,toast,closeModal} from './ui.js';
 import {esc} from './util.js';
 import {lang,setLang} from './i18n.js';
-import {initSync,onStatus,isOn,syncNow,getStatus,pendingCount} from './sync.js';
+import {initSync,onStatus,isOn,syncNow,getStatus,pendingCount,connect} from './sync.js';
 import * as dashboard from './dashboard.js';import * as products from './products.js';import * as inspect from './inspect.js';import * as trace from './trace.js';import * as reports from './reports.js';import * as settings from './settings.js';
 const R={dashboard,products,inspect,trace,reports,settings};
 const NAV=[['dashboard','dash','ภาพรวม'],['products','box','สินค้า & Serial'],['inspect','scan','ตรวจ QC'],['trace','trace','ย้อนรอย'],['reports','chart','รายงาน']];
@@ -41,8 +41,13 @@ function start(){init();theme();shell();setRefresh(rerender);onStatus(paintCloud
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;const b=document.getElementById('inst');if(b)b.style.display=''});
   /* รับค่าจากแอปสแกน QR ของมือถือ (Share → Smart QC) หรือลิงก์ ?sn= */
   const qs=new URLSearchParams(location.search),shared=qs.get('sn')||qs.get('url')||qs.get('text')||qs.get('title');
+  /* ลิงก์ตั้งค่า ?setup=<base64url {u,t}> → เชื่อม Google Sheet ให้เองครั้งเดียว */
+  let setupMsg='';const sp=qs.get('setup');
+  if(sp){try{const o=JSON.parse(decodeURIComponent(escape(atob(sp.replace(/-/g,'+').replace(/_/g,'/')))));if(/^https:\/\//.test(o.u||'')){if(S.settings.demo)reset(false);connect(o.u,o.t||'');setupMsg='ok'}else setupMsg='bad'}catch(e){setupMsg='bad'}
+    history.replaceState(null,'',location.pathname+'#/inspect')}
   if(shared)history.replaceState(null,'',location.pathname+'#/inspect');
   if(!location.hash)location.hash='/dashboard';route();
   if(shared)setTimeout(()=>inspect.submitSn(shared),350);
+  if(setupMsg)setTimeout(()=>{toast(setupMsg==='ok'?'เชื่อม Google Sheet เรียบร้อยแล้ว — พร้อมใช้งาน':'ลิงก์ตั้งค่าไม่ถูกต้อง ขอลิงก์ใหม่จากหัวหน้า',5000);if(setupMsg==='ok')syncNow({quiet:true})},500);
   if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{})}
 let started=false;const boot=()=>{if(started)return;started=true;start()};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
