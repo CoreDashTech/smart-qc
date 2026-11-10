@@ -62,5 +62,5 @@ ACT.tpAdd=()=>{const d=document.createElement('div');d.innerHTML=irow({type:'che
 ACT.tpDel=el=>{const l=document.querySelectorAll('#tpi .tpi');if(l.length<=1)return toast('ต้องมีอย่างน้อย 1 หัวข้อ');el.closest('.tpi').remove()};
 
 const LK=()=>{window.dispatchEvent(new Event('cdq-theme'));refresh()};
-for(const k of ['lookBg','lookAc','lookSide','lookReset'])ACT[k]=el=>{lookActions[k](el.dataset.v);LK()};
-for(const k of ['lookBgC','lookAcC'])IN[k]=el=>{lookActions[k](el.value);window.dispatchEvent(new Event('cdq-theme'))};
+for(const k of ['lookBg','lookAc','lookSb','lookReset'])ACT[k]=el=>{lookActions[k](el.dataset.v);LK()};
+for(const k of ['lookBgC','lookAcC','lookSbC'])IN[k]=el=>{lookActions[k](el.value);window.dispatchEvent(new Event('cdq-theme'))};
