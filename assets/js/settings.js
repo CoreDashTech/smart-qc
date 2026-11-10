@@ -1,3 +1,4 @@
+import {VER_TEXT} from './version.js';
 import {S,save,reset,exportJSON,importJSON,DEFECTS} from './store.js';
 import {ACT,IN,ic,refresh,modal,closeModal,toast,ask} from './ui.js';
 import {getCfg,getStatus,ping,connect,disconnect,syncNow,pendingCount} from './sync.js';
@@ -28,7 +29,7 @@ export function render(){const bytes=new Blob([JSON.stringify(S)]).size;
    <div class="card"><h2>สำรอง / กู้คืนข้อมูล</h2><p class="mut" style="margin:0 0 12px;font-size:.9rem">ข้อมูลเก็บในเครื่องนี้ (${fNum(bytes/1024)} KB) — แนะนำสำรองเป็นประจำ</p>
     <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn" data-act="bkExport">${ic('download')} สำรองข้อมูล</button><label class="btn">${ic('up')} กู้คืน<input type="file" accept=".json,application/json" hidden data-in="bkImport"></label></div></div>
    <div class="card"><h2>เริ่มใหม่</h2><div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn" data-act="loadDemo">โหลดข้อมูลตัวอย่าง</button><button class="btn danger" data-act="wipe">${ic('trash')} ล้างข้อมูลทั้งหมด</button></div></div>
-   <div class="card" style="display:flex;gap:16px;align-items:center"><img src="assets/brand/logo-96.png" alt="" style="height:84px"><div><h2>เกี่ยวกับ</h2><p class="mut" style="margin:0;font-size:.9rem">CoreDash Smart QC v1.0 · ระบบตรวจสอบคุณภาพและติดตามประวัติการผลิตสำหรับโรงงาน SME<br>© CoreDash Technology</p></div></div></div></div>`}
+   <div class="card" style="display:flex;gap:16px;align-items:center"><img src="assets/brand/logo-96.png" alt="" style="height:84px"><div><h2>เกี่ยวกับ</h2><p class="mut" style="margin:0;font-size:.9rem">CoreDash Smart QC ${VER_TEXT} · ระบบตรวจสอบคุณภาพและติดตามประวัติการผลิตสำหรับโรงงาน SME<br>© CoreDash Technology</p></div></div></div></div>`}
 const cloudChip=()=>{const m=getStatus().mode;return getCfg()?(m==='ok'?'<span class="chip ok">เชื่อมต่อแล้ว</span>':m==='busy'?'<span class="chip info">กำลังซิงก์</span>':m==='offline'?'<span class="chip warn">ออฟไลน์</span>':'<span class="chip bad">ผิดพลาด</span>'):'<span class="chip">ยังไม่เชื่อมต่อ</span>'};
 const cloudLast=()=>{const t=getStatus().last;return t?'ซิงก์ล่าสุด '+new Date(t).toLocaleString(locale()):'ยังไม่เคยซิงก์'};
 ACT.syncNow=async()=>{try{await syncNow();toast('ซิงก์แล้ว')}catch(e){toast('ซิงก์ไม่สำเร็จ: '+e.message,5000)}refresh()};
