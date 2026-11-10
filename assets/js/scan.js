@@ -40,4 +40,4 @@ export async function openScanner(onResult){
     try{if(det){const r=await det.detect(v);if(r.length&&live)return done(r[0].rawValue)}
       if(window.jsQR&&v.videoWidth){const q=decodePass(v,v.videoWidth,v.videoHeight,n++);if(q&&live)done(q)}}catch(e){}};
   raf=requestAnimationFrame(tick)}
-ACT.scanStop=()=>{stopScan();closeModal()};
+ACT.scanStop=()=>{try{sessionStorage.removeItem('cdq.cont')}catch(e){}stopScan();closeModal()};

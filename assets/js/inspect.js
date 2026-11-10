@@ -31,7 +31,12 @@ export function askRegister(sn,opt={}){
     if(only){go(opt.back||'/inspect');refresh()}else go('/inspect/'+encodeURIComponent(sn))}}
 ACT.mClose2=()=>closeModal();ACT.goProducts=()=>{closeModal();go('/products')};
 /* ---------- สแกนด้วยกล้อง ---------- */
-ACT.camScan=()=>openScanner(submitSn);
+const phone=()=>matchMedia('(max-width:700px)').matches&&matchMedia('(pointer:coarse)').matches;
+ACT.camScan=()=>{try{sessionStorage.setItem('cdq.cont','1')}catch(e){}openScanner(submitSn)};
+/* เครื่องยิงบาร์โค้ด (keyboard wedge): ถ้าโฟกัสหลุด ตัวอักษรที่ยิงมาจะถูกดึงเข้าช่อง Serial เอง */
+document.addEventListener('keydown',e=>{if(location.hash.replace(/^#\/?/,'')!=='inspect'||document.getElementById('modal')||e.ctrlKey||e.metaKey||e.altKey)return;
+  const t=document.activeElement,tag=t&&t.tagName;if(/INPUT|TEXTAREA|SELECT/.test(tag||''))return;const i=document.getElementById('snIn');if(!i)return;
+  if(e.key.length===1||e.key==='Enter'){i.focus()}});
 /* ---------- หน้าตรวจ ---------- */
 function renderForm(sn){const u=unitBySn(sn);if(!u)return`<div class="card empty"><div class="big">🔎</div><h2>ไม่พบ Serial</h2><a class="btn pri" href="#/inspect">กลับ</a></div>`;
   const p=getP(u.productId),t=getT(p.templateId),lot=getL(u.lotId),prev=S.inspections.filter(i=>i.sn===u.sn);
@@ -74,4 +79,4 @@ ACT.nextAfter=el=>{closeModal();go(el.dataset.v?'/inspect/'+el.dataset.v:'/inspe
 ACT.reInsp=el=>{closeModal();cur=null;go('/inspect/'+el.dataset.v);refresh()};
 ACT.doScrap=el=>{scrapUnit(decodeURIComponent(el.dataset.v),inspector());closeModal();toast('บันทึก Scrap แล้ว');go(el.dataset.n?'/inspect/'+el.dataset.n:'/inspect')};
 export function render(p){if(!p[0])return renderScan();return renderForm(decodeURIComponent(p[0]))}
-export function mount(p){if(!p[0]){const f=document.getElementById('snf');if(f)f.onsubmit=e=>{e.preventDefault();submitSn(new FormData(f).get('sn'))};const i=document.getElementById('snIn');if(i&&matchMedia('(hover:hover)').matches)i.focus()}else if(cur)paint()}
+export function mount(p){if(!p[0]){const f=document.getElementById('snf');if(f)f.onsubmit=e=>{e.preventDefault();submitSn(new FormData(f).get('sn'))};const i=document.getElementById('snIn');if(i&&matchMedia('(hover:hover)').matches)i.focus();let c=null;try{c=sessionStorage.getItem('cdq.cont')}catch(e){}if(c==='1'&&phone()&&!document.getElementById('modal'))setTimeout(()=>{if(location.hash.replace(/^#\/?/,'')==='inspect'&&!document.getElementById('modal'))openScanner(submitSn)},350)}else if(cur)paint()}
