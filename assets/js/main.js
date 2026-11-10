@@ -36,6 +36,8 @@ function start(){init();theme();shell();setRefresh(rerender);onStatus(paintCloud
   const hin=e=>{const t=e.target.closest('[data-in]');if(t&&IN[t.dataset.in])IN[t.dataset.in](t,e)};
   document.addEventListener('input',e=>{const t=e.target;if(t.type==='file'||t.tagName==='SELECT')return;hin(e)});document.addEventListener('change',hin);
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+  ACT.instApp=async()=>{if(deferred){deferred.prompt();await deferred.userChoice;deferred=null;const b=document.getElementById('inst');if(b)b.style.display='none';return}
+    toast(matchMedia('(display-mode: standalone)').matches?'ติดตั้งแอปนี้แล้ว':'เปิดใน Chrome แล้วกด ⋮ → ติดตั้งแอป / เพิ่มลงในหน้าจอหลัก (iPhone: แชร์ → เพิ่มไปยังหน้าจอโฮม)',6000)};
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;const b=document.getElementById('inst');if(b)b.style.display=''});
   /* รับค่าจากแอปสแกน QR ของมือถือ (Share → Smart QC) หรือลิงก์ ?sn= */
   const qs=new URLSearchParams(location.search),shared=qs.get('sn')||qs.get('url')||qs.get('text')||qs.get('title');

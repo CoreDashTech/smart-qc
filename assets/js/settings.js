@@ -9,6 +9,7 @@ export const title='ตั้งค่า';
 const lines=a=>a.join('\n'),parse=s=>s.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
 export function render(){const bytes=new Blob([JSON.stringify(S)]).size;
   return`<div class="ph"><div><h1>ตั้งค่าระบบ</h1><p>ปรับให้เข้ากับโรงงานของคุณ — บันทึกอัตโนมัติเมื่อกด “บันทึก”</p></div></div>
+  <div class="card" style="margin-bottom:16px"><h2>ติดตั้งแอปบนมือถือ / คอมพิวเตอร์</h2><p class="mut" style="margin:0 0 10px;font-size:.9rem">ติดตั้งแล้วจะมีไอคอนบนหน้าจอ เปิดเต็มจอเหมือนแอป และขึ้นเป็นตัวเลือกใน “แชร์” เมื่อสแกน QR</p><div class="acts" style="justify-content:flex-start"><button class="btn pri" data-act="instApp">ติดตั้งแอป</button></div><p class="mut" style="font-size:.82rem;margin:10px 0 0">ถ้ากดแล้วไม่ขึ้น: Chrome → ⋮ → <b>ติดตั้งแอป</b> / <b>เพิ่มลงในหน้าจอหลัก</b> · iPhone (Safari) → ปุ่มแชร์ → <b>เพิ่มไปยังหน้าจอโฮม</b></p></div>
   <div class="grid g2" style="align-items:start"><div style="display:grid;gap:16px">
    <form class="card" id="setf"><h2>ข้อมูลโรงงาน</h2>
     <div class="f"><label>ชื่อบริษัท / ระบบ</label><input class="in" name="company" value="${esc(S.settings.company)}"></div>

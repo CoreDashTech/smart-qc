@@ -1,5 +1,12 @@
 /* พจนานุกรมไทย → อังกฤษ (ประโยคที่ถูกตัดตามตัวแปรออกเป็นท่อน ๆ ให้ต่อกันเป็นประโยคที่ถูกต้อง) */
 export default {
+"ติดตั้งแอปบนมือถือ / คอมพิวเตอร์": "Install the app on phone / computer",
+"ติดตั้งแล้วจะมีไอคอนบนหน้าจอ เปิดเต็มจอเหมือนแอป และขึ้นเป็นตัวเลือกใน “แชร์” เมื่อสแกน QR": "Once installed it gets a home-screen icon, opens full screen like an app, and appears in “Share” when you scan a QR",
+"ถ้ากดแล้วไม่ขึ้น:": "If nothing happens:",
+"เพิ่มลงในหน้าจอหลัก": "Add to Home screen",
+"เพิ่มไปยังหน้าจอโฮม": "Add to Home Screen",
+"ติดตั้งแอปนี้แล้ว": "App already installed",
+"เปิดใน Chrome แล้วกด ⋮ → ติดตั้งแอป / เพิ่มลงในหน้าจอหลัก (iPhone: แชร์ → เพิ่มไปยังหน้าจอโฮม)": "Open in Chrome and tap ⋮ → Install app / Add to Home screen (iPhone: Share → Add to Home Screen)",
 "สแกนด้วยกล้อง/สแกน QR ของมือถือ แล้วส่งเข้าแอป": "Scan with the phone camera / QR scanner and send it to the app",
 "เปิดแอปกล้องมือถือ หรือแตะปุ่ม": "Open the phone camera, or tap",
 "ในแถบการตั้งค่าด่วน (ปัดจอลง) แล้วเล็งที่ QR": "in the quick settings panel (swipe down), then aim at the QR",
