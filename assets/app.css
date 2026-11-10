@@ -113,3 +113,10 @@ svg.dn .dnv{font:700 20px var(--mono);fill:var(--ink)}svg.dn .dns{font:500 9px v
 .sw button.on{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--surface),0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
 .sw label.cu{width:38px;height:38px;border-radius:50%;border:2px dashed var(--mut);display:grid;place-items:center;cursor:pointer;overflow:hidden;position:relative;background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red)}
 .sw label.cu input{position:absolute;inset:-6px;opacity:0;cursor:pointer;width:60px;height:60px}.sw label.cu.on{border:2px solid var(--accent)}
+
+.mod.sc{padding:0;background:#000;align-items:stretch}.mod.sc .box{width:100%;max-width:none;height:100%;max-height:none;border-radius:0;padding:0;background:#000;overflow:hidden}
+.scm{position:relative;height:100dvh;background:#000;color:#fff}.scm video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scg{position:absolute;left:50%;top:40%;width:70vw;max-width:340px;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid var(--accent);border-radius:22px;box-shadow:0 0 0 999px rgba(0,0,0,.5)}
+.sct{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:linear-gradient(#000a,#0000)}
+.scb{position:absolute;bottom:0;left:0;right:0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(#0000,#000c 30%)}.scb p{margin:0 0 10px;font-size:.88rem;text-align:center;color:#fff}
+.scbtn{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.scbtn .btn{cursor:pointer}.scz{display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:.85rem}.scz input{flex:1}
