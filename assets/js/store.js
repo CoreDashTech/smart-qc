@@ -31,7 +31,7 @@ export function evaluate(tpl,vals){const res=tpl.items.map(it=>{const v=vals[it.
 export function saveInspection({sn,vals,inspector,defect,note,photo,ts=Date.now()}){
   const u=unitBySn(sn),p=getP(u.productId),t=getT(p.templateId),ev=evaluate(t,vals);
   const prev=S.inspections.filter(i=>i.sn===u.sn).length;
-  const ins={id:uid('i'),sn:u.sn,productId:u.productId,lotId:u.lotId,ts,inspector,results:ev.results,verdict:ev.verdict,defect:ev.verdict==='FAIL'?(defect||'OTH'):null,note:note||'',round:prev+1,photo:null};
+  const ins={id:uid('i'),sn:u.sn,productId:u.productId,lotId:u.lotId,ts,inspector,results:ev.results,verdict:ev.verdict,defect:ev.verdict==='FAIL'?(defect||'OTH'):null,note:note||'',round:prev+1,photo:null,scan:u.meta?{id:u.meta.id,hw:u.meta.hw,rnd:u.meta.rnd,model:u.meta.model||'',fw:u.meta.fw||'',ua:u.meta.ua}:null};
   if(photo){ins.photo='p'+ins.id;try{localStorage.setItem(PKEY+ins.photo,photo)}catch(e){ins.photo=null}}
   S.inspections.push(ins);u.status=ev.verdict==='PASS'?'pass':'fail';u.last=ts;
   save();return ins}
@@ -74,3 +74,8 @@ function seed(){
 export function init(){if(!load()){S.settings=defaults();seed();save()}}
 export function exportJSON(){return JSON.stringify({app:'coredash-smart-qc',v:1,at:Date.now(),data:S})}
 export function importJSON(txt){const j=JSON.parse(txt);if(j.app!=='coredash-smart-qc')throw new Error('ไฟล์ไม่ใช่ข้อมูล CoreDash Smart QC');Object.assign(S,j.data);save()}
+
+/* สินค้า+แม่แบบตรวจตั้งต้นสำหรับบอร์ดมิเตอร์ SMCV4 (พิกัดกระแสเป็นค่าตั้งต้น ปรับได้ที่เมนูสินค้า) */
+export function ensureBoardProduct(model='SMCV4'){let p=S.products.find(x=>x.sku===model);if(p)return p;
+  const t={id:uid('t'),name:'ตรวจบอร์ดมิเตอร์ '+model,items:[{id:'i1',label:'กระแสขณะวัด',type:'measure',nominal:null,lsl:0,usl:15,unit:'µA',critical:true},{id:'i2',label:'ตรวจด้วยสายตา: บัดกรี/ชิ้นส่วนครบ',type:'check',critical:false},{id:'i3',label:'จอ LCD แสดงผลปกติ',type:'check',critical:true}]};
+  S.templates.push(t);p={id:uid('p'),sku:model,name:'บอร์ดมิเตอร์ '+model,category:'อิเล็กทรอนิกส์',templateId:t.id,unit:'ชิ้น',ts:Date.now()};S.products.push(p);save();return p}

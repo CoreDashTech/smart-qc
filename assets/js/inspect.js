@@ -1,6 +1,6 @@
-import {S,save,getP,getL,getT,unitBySn,evaluate,saveInspection,DEFECTS,defName,scrapUnit,createLot,addUnits} from './store.js';
+import {S,save,getP,getL,getT,unitBySn,evaluate,saveInspection,DEFECTS,defName,scrapUnit,createLot,addUnits,ensureBoardProduct} from './store.js';
 import {ACT,IN,ic,refresh,modal,closeModal,toast,chipV,go} from './ui.js';
-import {openScanner,parseScan} from './scan.js';
+import {openScanner,parseScan,parseBoard} from './scan.js';
 import {esc,fNum,fDate,fTime,clamp} from './util.js';
 export const title='ตรวจ QC';
 let cur=null,stream=null,scanT=null;
@@ -19,15 +19,24 @@ function renderScan(){
   ${failed.length?`<div class="card" style="margin-top:16px"><div class="ch-h"><h2>รอตรวจซ้ำ (FAIL)</h2><span class="chip bad">${failed.length}</span></div><div class="rows">${failed.slice(0,5).map(item).join('')}</div></div>`:''}
   <div class="card" style="margin-top:16px"><div class="ch-h"><h2>ชิ้นที่รอตรวจ</h2><span class="chip">${fNum(waiting.length)}</span></div><div class="rows">${waiting.slice(0,10).map(item).join('')||'<div class="empty-s">ไม่มีชิ้นงานรอตรวจ — เปิดล็อตใหม่ได้ที่เมนู "สินค้า"</div>'}</div></div>`}
 IN.insp=el=>localStorage.setItem('cdq.inspector',el.value);
-export function submitSn(sn,opt={}){sn=parseScan(sn);if(!sn)return;const u=unitBySn(sn);if(u)return go((opt.to||'/inspect/')+encodeURIComponent(u.sn));askRegister(sn,opt)}
+function registerUnit(sn,pid,label,meta){let lot=S.lots.filter(l=>l.productId===pid).sort((a,b)=>b.ts-a.ts)[0];
+  if(!lot)lot=createLot({productId:pid,qty:0,line:S.settings.lines[0],shift:'A',operator:S.settings.operators[0]});addUnits({lotId:lot.id,sns:[sn]});
+  const nu=unitBySn(sn);if(nu){if(label)nu.label=label;if(meta)nu.meta=meta}save();return nu}
+let pend=null;
+export function submitSn(raw,opt={}){const sn=parseScan(raw);if(!sn)return;const meta=parseBoard(raw),u=unitBySn(sn);
+  if(u){if(meta){u.meta=meta;save()}return go((opt.to||'/inspect/')+encodeURIComponent(u.sn))}
+  if(!S.products.length){pend={sn,meta,raw,opt};return meta?modal(`<h2>ยังไม่มีสินค้าในระบบ</h2><p class="mut">พบ QR บอร์ดมิเตอร์: Meter ID <b class="mono">${esc(meta.id)}</b> · ${esc(meta.model||meta.hw)}${meta.fw?' · '+esc(meta.fw):''}${meta.ua!=null?' · '+meta.ua+' µA':''}<br>ให้ระบบสร้างสินค้า “บอร์ดมิเตอร์ ${esc(meta.model||'SMCV4')}” พร้อมแม่แบบตรวจ (กระแส + ตรวจสายตา + จอ LCD) แล้วลงทะเบียนเลยไหม</p><div class="acts"><button class="btn" data-act="mClose2">ยกเลิก</button><button class="btn pri" data-act="mkBoard">สร้างและลงทะเบียน</button></div>`):askRegister(sn,opt)}
+  const mp=meta&&meta.model&&S.products.find(x=>x.sku===meta.model);
+  if(mp){registerUnit(sn,mp.id,String(raw).trim().slice(0,80),meta);toast('ลงทะเบียนแล้ว · '+sn);return go('/inspect/'+encodeURIComponent(sn))}
+  if(S.products.length===1&&meta){registerUnit(sn,S.products[0].id,String(raw).trim().slice(0,80),meta);toast('ลงทะเบียนแล้ว · '+sn);return go('/inspect/'+encodeURIComponent(sn))}
+  askRegister(sn,{...opt,meta});const rt=String(raw||'').trim();if(rt&&rt!==sn&&!/^https?:/i.test(rt)){const l=document.querySelector('#qf [name=label]');if(l&&!l.value)l.value=rt.slice(0,80)}}
+ACT.mkBoard=()=>{if(!pend)return;const p=ensureBoardProduct(pend.meta&&pend.meta.model||'SMCV4');closeModal();const {sn,meta,raw}=pend;pend=null;registerUnit(sn,p.id,String(raw).trim().slice(0,80),meta);toast('สร้างสินค้าและลงทะเบียนแล้ว · '+sn);go('/inspect/'+encodeURIComponent(sn))};
 /* โค้ดที่ยังไม่อยู่ในระบบ (เช่น QR ที่ติดมากับบอร์ด/อุปกรณ์) → ลงทะเบียนจากโค้ดนั้นได้ทันที */
 export function askRegister(sn,opt={}){
   if(!S.products.length)return modal(`<h2>ยังไม่มีสินค้าในระบบ</h2><p class="mut">ต้องเพิ่มสินค้า (เช่น ชื่อบอร์ด/อุปกรณ์) ก่อน จึงจะลงทะเบียนโค้ดได้</p><div class="acts"><button class="btn" data-act="mClose2">ปิด</button><button class="btn pri" data-act="goProducts">ไปเพิ่มสินค้า</button></div>`);
   modal(`<h2>พบโค้ดใหม่ — ยังไม่ได้ลงทะเบียน</h2><p class="mono" style="word-break:break-all;background:var(--surface2);padding:10px 12px;border-radius:12px;margin:0 0 12px">${esc(sn)}</p><form id="qf"><div class="f"><label>สินค้า / ประเภทบอร์ด</label><select class="in" name="p">${S.products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div><div class="f"><label>ชื่อเรียก / ตำแหน่งอุปกรณ์ (ไม่บังคับ)</label><input class="in" name="label" placeholder="เช่น บอร์ดควบคุมเครื่องอัด #3" autocomplete="off"></div><div class="acts" style="flex-wrap:wrap"><button type="button" class="btn" data-act="mClose2">ยกเลิก</button><button type="button" class="btn" data-act="regOnly">ลงทะเบียนอย่างเดียว</button><button class="btn pri">ลงทะเบียน & ตรวจ</button></div></form>`);
   const f=document.getElementById('qf');let only=false;ACT.regOnly=()=>{only=true;f.requestSubmit()};
-  f.onsubmit=e=>{e.preventDefault();const d=new FormData(f),pid=d.get('p');let lot=S.lots.filter(l=>l.productId===pid).sort((a,b)=>b.ts-a.ts)[0];
-    if(!lot)lot=createLot({productId:pid,qty:0,line:S.settings.lines[0],shift:'A',operator:S.settings.operators[0]});addUnits({lotId:lot.id,sns:[sn]});
-    const nu=unitBySn(sn);if(nu&&String(d.get('label')).trim())nu.label=String(d.get('label')).trim();save();closeModal();toast('ลงทะเบียนแล้ว');
+  f.onsubmit=e=>{e.preventDefault();const d=new FormData(f);registerUnit(sn,d.get('p'),String(d.get('label')||'').trim(),opt.meta);closeModal();toast('ลงทะเบียนแล้ว');
     if(only){go(opt.back||'/inspect');refresh()}else go('/inspect/'+encodeURIComponent(sn))}}
 ACT.mClose2=()=>closeModal();ACT.goProducts=()=>{closeModal();go('/products')};
 /* ---------- สแกนด้วยกล้อง ---------- */
@@ -40,15 +49,17 @@ document.addEventListener('keydown',e=>{if(location.hash.replace(/^#\/?/,'')!=='
 /* ---------- หน้าตรวจ ---------- */
 function renderForm(sn){const u=unitBySn(sn);if(!u)return`<div class="card empty"><div class="big">🔎</div><h2>ไม่พบ Serial</h2><a class="btn pri" href="#/inspect">กลับ</a></div>`;
   const p=getP(u.productId),t=getT(p.templateId),lot=getL(u.lotId),prev=S.inspections.filter(i=>i.sn===u.sn);
-  if(!cur||cur.sn!==u.sn)cur={sn:u.sn,vals:{},photo:null,defect:'',note:''};
+  if(!cur||cur.sn!==u.sn){cur={sn:u.sn,vals:{},photo:null,defect:'',note:''};
+    if(u.meta&&u.meta.ua!=null){const ci=t.items.find(i=>i.type==='measure'&&(/กระแส|current/i.test(i.label)||/^[µμu]a$/i.test(i.unit||'')));if(ci)cur.vals[ci.id]=String(u.meta.ua)}}
   const rows=t.items.map(it=>{
     if(it.type==='check')return`<div class="ck" data-item="${it.id}"><div class="lb"><b>${esc(it.label)}</b>${it.critical?'<span class="crit">● หัวข้อวิกฤต</span>':''}</div><div class="pn"><button type="button" class="y" data-act="ck" data-id="${it.id}" data-v="ok">${ic('check')} ผ่าน</button><button type="button" class="n" data-act="ck" data-id="${it.id}" data-v="ng">${ic('x')} ไม่ผ่าน</button></div></div>`;
     const lo=it.lsl,hi=it.usl,span=(hi!=null&&lo!=null)?hi-lo:null,a=span?lo-span*.6:null,b=span?hi+span*.6:null;
     return`<div class="ck" data-item="${it.id}" style="grid-template-columns:1fr"><div class="lb"><b>${esc(it.label)}</b> ${it.critical?'<span class="crit">● วิกฤต</span>':''}<small>พิกัด: ${lo!=null?'≥ '+lo:''}${lo!=null&&hi!=null?' และ ':''}${hi!=null?'≤ '+hi:''} ${esc(it.unit||'')}${it.nominal!=null?' (ค่ากลาง '+it.nominal+')':''}</small></div>
-      <div class="ms-in"><input class="in mono" inputmode="decimal" data-in="mv" data-id="${it.id}" placeholder="0.00" autocomplete="off"><span class="u">${esc(it.unit||'')}</span><span class="mv-s" style="flex:1;text-align:right;font-weight:700"></span></div>
+      <div class="ms-in"><input class="in mono" inputmode="decimal" data-in="mv" data-id="${it.id}" placeholder="0.00" autocomplete="off" value="${esc(cur.vals[it.id]??'')}"><span class="u">${esc(it.unit||'')}</span><span class="mv-s" style="flex:1;text-align:right;font-weight:700"></span></div>
       ${span?`<div class="rg" data-a="${a}" data-b="${b}"><i class="band" style="left:${(lo-a)/(b-a)*100}%;width:${span/(b-a)*100}%"></i><i class="pin" style="display:none"></i></div>`:''}</div>`}).join('');
   const retest=prev.length?`<span class="chip ${u.status==='fail'?'bad':'info'}">ตรวจซ้ำ · รอบที่ ${prev.length+1}</span>`:'';
   return`<div class="ph"><a class="btn sm" href="#/inspect">${ic('back')} กลับ</a><div><h1 class="mono" style="font-size:1.3rem">${esc(u.sn)}</h1><p>${esc(p.name)} · ล็อต ${esc(lot?.lotNo||'')} ${retest}</p></div><div class="sp"></div><a class="btn sm" href="#/trace/${encodeURIComponent(u.sn)}">${ic('trace')} ประวัติ</a></div>
+  ${u.meta?`<div class="card" style="margin-bottom:14px"><div style="font-size:.8rem;font-weight:700;opacity:.7;margin-bottom:8px">ข้อมูลจาก QR ที่สแกน</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px">${[['Meter ID',u.meta.id,1],['รุ่นบอร์ด',u.meta.model||u.meta.hw||'—'],['เฟิร์มแวร์',u.meta.fw||u.meta.rnd||'—'],['กระแส',u.meta.ua!=null?u.meta.ua+' µA':'ยังไม่มีใน QR · กรอกเอง']].map(([l,v,m])=>`<div style="background:var(--surface2);border-radius:12px;padding:10px 12px"><small class="mut">${l}</small><div class="${m?'mono ':''}" style="font-weight:800;font-size:1.05rem;word-break:break-all">${esc(String(v))}</div></div>`).join('')}</div></div>`:''}
   <div class="grid g21" style="align-items:start"><div><div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><h2 style="flex:1">รายการตรวจ · ${esc(t.name)}</h2><button class="btn sm" data-act="allOk">${ic('check')} ผ่านทั้งหมด (ข้อสายตา)</button></div>${rows}</div>
   <div class="card" id="side"><h2>หลักฐาน & หมายเหตุ</h2>
     <div class="f"><label>รูปถ่าย (ไม่บังคับ)</label><label class="btn" style="width:100%">${ic('camera')} ถ่ายรูป / เลือกรูป<input type="file" accept="image/*" capture="environment" hidden data-in="photo"></label><div id="ph"></div></div>

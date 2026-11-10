@@ -4,18 +4,18 @@ import {S,onChange,save,getP,getL,getT} from './store.js';
 const CFG='cdq.cfg',ST='cdq.sst',PK='cdq.photo.';
 const COLS={products:'products',templates:'templates',lots:'lots',units:'units',inspections:'inspections',events:'events'};
 const KEY={units:'sn'};const keyOf=(c,r)=>r[KEY[c]||'id'];
-const HDR={products:['SKU','ชื่อสินค้า','หมวด','หน่วย','แม่แบบตรวจ'],templates:['ชื่อแม่แบบ','จำนวนหัวข้อ','หัวข้อ'],lots:['เลขล็อต','สินค้า','จำนวน','ไลน์','กะ','ผู้ผลิต','วันที่'],units:['Serial','สินค้า','ล็อต','สถานะ','ชื่อเรียก'],inspections:['เวลา','Serial','สินค้า','ล็อต','ผู้ตรวจ','รอบที่','ผล','รหัสของเสีย','สาเหตุ','ค่าที่วัด','หมายเหตุ'],events:['เวลา','Serial','เหตุการณ์','โดย'],settings:['บริษัท','โรงงาน','เป้า %']};
+const HDR={products:['SKU','ชื่อสินค้า','หมวด','หน่วย','แม่แบบตรวจ'],templates:['ชื่อแม่แบบ','จำนวนหัวข้อ','หัวข้อ'],lots:['เลขล็อต','สินค้า','จำนวน','ไลน์','กะ','ผู้ผลิต','วันที่'],units:['Serial','สินค้า','ล็อต','สถานะ','ชื่อเรียก','รุ่นบอร์ด','เฟิร์มแวร์','กระแส (µA)'],inspections:['เวลา','Serial','สินค้า','ล็อต','ผู้ตรวจ','รอบที่','ผล','รหัสของเสีย','สาเหตุ','ค่าที่วัด','หมายเหตุ','Meter ID','รุ่นบอร์ด','เฟิร์มแวร์','กระแส (µA)'],events:['เวลา','Serial','เหตุการณ์','โดย'],settings:['บริษัท','โรงงาน','เป้า %']};
 const dt=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
 const cols={
  products:r=>[r.sku,r.name,r.category,r.unit,getT(r.templateId)?.name||''],
  templates:r=>[r.name,r.items.length,r.items.map(i=>i.label).join(' | ')],
  lots:r=>[r.lotNo,getP(r.productId)?.name||'',r.qty,r.line,r.shift,r.operator,dt(r.ts)],
- units:r=>[r.sn,getP(r.productId)?.name||'',getL(r.lotId)?.lotNo||'',r.status,r.label||''],
+ units:r=>[r.sn,getP(r.productId)?.name||'',getL(r.lotId)?.lotNo||'',r.status,r.label||'',(r.meta?.model||r.meta?.hw)||'',(r.meta?.fw||r.meta?.rnd)||'',r.meta?.ua??''],
 
  events:r=>[dt(r.ts),r.sn||'',r.text,r.by||''],
  settings:r=>[r.company,r.plant,r.target]};
-cols.inspections=r=>[dt(r.ts),r.sn,getP(r.productId)?.name||'',getL(r.lotId)?.lotNo||'',r.inspector,r.round,r.verdict,r.defect||'',r.results.map(x=>x.type==='measure'?`${x.label}=${x.value}${x.unit||''}${x.ok?'':' ✘'}`:`${x.label}:${x.value==='ok'?'OK':'NG'}`).join('; '),r.note||''];
-HDR.inspections=['เวลา','Serial','สินค้า','ล็อต','ผู้ตรวจ','รอบที่','ผล','รหัสของเสีย','ค่าที่วัด','หมายเหตุ'];
+cols.inspections=r=>[dt(r.ts),r.sn,getP(r.productId)?.name||'',getL(r.lotId)?.lotNo||'',r.inspector,r.round,r.verdict,r.defect||'',r.results.map(x=>x.type==='measure'?`${x.label}=${x.value}${x.unit||''}${x.ok?'':' ✘'}`:`${x.label}:${x.value==='ok'?'OK':'NG'}`).join('; '),r.note||'',r.scan?.id||'',(r.scan?.model||r.scan?.hw)||'',(r.scan?.fw||r.scan?.rnd)||'',r.scan?.ua??''];
+HDR.inspections=['เวลา','Serial','สินค้า','ล็อต','ผู้ตรวจ','รอบที่','ผล','รหัสของเสีย','ค่าที่วัด','หมายเหตุ','Meter ID','รุ่นบอร์ด','เฟิร์มแวร์','กระแส (µA)'];
 const SKIPSET=['theme','demo'];
 const lsGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch(e){return d}};
 let cfg=lsGet(CFG,null),st=lsGet(ST,{last:0,snap:{},ph:{}}),busy=false,timer=null,poll=null,status={mode:cfg?'ok':'off',msg:'',last:st.last||0,pending:0};

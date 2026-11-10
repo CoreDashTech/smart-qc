@@ -72,6 +72,14 @@ function push_(b) {
     // หาตำแหน่งคอลัมน์ _id จาก header จริง
     var head = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
     var idCol = head.indexOf('_id') + 1, nc = head.length;
+    // ถ้าแอปเพิ่มคอลัมน์ใหม่ (header ยาวกว่าชีต) → แทรกคอลัมน์ก่อน _id แล้วเติมหัวตาราง
+    if (hdr.length > nc - 3) {
+      var add = hdr.length - (nc - 3);
+      s.insertColumnsBefore(idCol, add);
+      s.getRange(1, nc - 2, 1, add).setValues([hdr.slice(nc - 3)]).setFontWeight('bold').setBackground('#17181c').setFontColor('#ffffff');
+      head = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
+      idCol = head.indexOf('_id') + 1; nc = head.length;
+    }
     var ids = last > 1 ? s.getRange(2, idCol, last - 1, 1).getValues() : [];
     var idx = {};
     for (var i = 0; i < ids.length; i++) idx[ids[i][0]] = i + 2;

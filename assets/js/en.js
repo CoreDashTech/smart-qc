@@ -1,5 +1,14 @@
 /* พจนานุกรมไทย → อังกฤษ (ประโยคที่ถูกตัดตามตัวแปรออกเป็นท่อน ๆ ให้ต่อกันเป็นประโยคที่ถูกต้อง) */
 export default {
+"ข้อมูลจาก QR ที่สแกน": "Data from the scanned QR",
+"รุ่น HW": "HW version",
+"รอบ (RND)": "Round (RND)",
+"กระแส": "Current",
+"พบ QR บอร์ดมิเตอร์:": "Meter board QR found:",
+"ให้ระบบสร้างสินค้า “บอร์ดมิเตอร์ SMCV4” พร้อมแม่แบบตรวจ (กระแส + ตรวจสายตา + จอ LCD) แล้วลงทะเบียนเลยไหม": "Create the product “SMCV4 meter board” with an inspection template (current + visual + LCD) and register it now?",
+"สร้างและลงทะเบียน": "Create & register",
+"สร้างสินค้าและลงทะเบียนแล้ว": "Product created and registered",
+"ลงทะเบียนแล้ว ·": "Registered ·",
 "ติดตั้งแอปบนมือถือ / คอมพิวเตอร์": "Install the app on phone / computer",
 "ติดตั้งแล้วจะมีไอคอนบนหน้าจอ เปิดเต็มจอเหมือนแอป และขึ้นเป็นตัวเลือกใน “แชร์” เมื่อสแกน QR": "Once installed it gets a home-screen icon, opens full screen like an app, and appears in “Share” when you scan a QR",
 "ถ้ากดแล้วไม่ขึ้น:": "If nothing happens:",
