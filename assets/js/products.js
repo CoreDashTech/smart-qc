@@ -1,7 +1,7 @@
 import {S,save,getP,getL,getT,createLot,addUnits,addEvent,lotStats,unitBySn} from './store.js';
 import {ACT,IN,ic,refresh,modal,closeModal,toast,chipV,go} from './ui.js';
 import {esc,fNum,fDate,fDT,fTime,uid} from './util.js';
-import {code128,qrSvg} from './barcode.js';
+import {code128,qrSvg,snLink} from './barcode.js';
 export const title='สินค้า & Serial';
 let tab=sessionStorage.getItem('cdq.ptab')||'lots',q='',fs='all';
 ACT.pTab=el=>{tab=el.dataset.v;sessionStorage.setItem('cdq.ptab',tab);refresh()};
@@ -40,7 +40,7 @@ ACT.snAdd=()=>{const open=S.lots.slice().sort((a,b)=>b.ts-a.ts).slice(0,30);if(!
   modal(`<h2>เพิ่ม Serial ที่มีอยู่แล้ว</h2><p class="mut" style="margin:0 0 10px">วาง Serial ที่ติดป้ายไว้แล้ว (หนึ่งบรรทัดต่อหนึ่งรายการ) หรือยิงบาร์โค้ดต่อเนื่อง</p><form id="sf"><div class="f"><label>ล็อต</label><select class="in" name="lot">${open.map(l=>`<option value="${l.id}">${esc(l.lotNo)} · ${esc(getP(l.productId)?.name)}</option>`).join('')}</select></div><div class="f"><label>Serial Numbers</label><textarea class="in mono" name="sns" rows="6" placeholder="SN-0001&#10;SN-0002" autofocus></textarea></div><div class="acts"><button type="button" class="btn" data-act="mClose">ยกเลิก</button><button class="btn pri">เพิ่ม</button></div></form>`);
   document.getElementById('sf').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),n=addUnits({lotId:f.lot,sns:f.sns.split(/\r?\n|,|;/)});save();closeModal();toast(n?`เพิ่ม ${n} Serial แล้ว`:'ไม่มี Serial ใหม่ (อาจซ้ำ)');refresh()}};
 /* ---------- พิมพ์ป้าย ---------- */
-export function printLabels(units){const html=units.map(u=>{const p=getP(u.productId);return`<div class="lab"><b>${esc(p?.name||'')}</b><div class="t"><div style="flex:1">${code128(u.sn,{h:40})}<small>${esc(u.sn)}</small></div><div class="q">${qrSvg(u.sn)}</div></div><small>${esc(S.settings.company)} · ล็อต ${esc(getL(u.lotId)?.lotNo||'')}</small></div>`}).join('');
+export function printLabels(units){const html=units.map(u=>{const p=getP(u.productId);return`<div class="lab"><b>${esc(p?.name||'')}</b><div class="t"><div style="flex:1">${code128(u.sn,{h:40})}<small>${esc(u.sn)}</small></div><div class="q">${qrSvg(snLink(u.sn))}</div></div><small>${esc(S.settings.company)} · ล็อต ${esc(getL(u.lotId)?.lotNo||'')}</small></div>`}).join('');
   document.getElementById('print').innerHTML=`<h3 style="font-family:var(--font)">ป้าย Serial (${units.length})</h3>`+html;setTimeout(()=>window.print(),120)}
 ACT.printLot=el=>{closeModal();printLabels(S.units.filter(u=>u.lotId===el.dataset.id))};
 ACT.printSn=el=>printLabels([unitBySn(el.dataset.sn)]);

@@ -4,3 +4,6 @@ export function code128(text,{h=44,mod=1.6}={}){const s=String(text).replace(/[^
   let x=10*mod,bars='';codes.forEach(c=>{const p=P[c];for(let i=0;i<p.length;i++){const w=+p[i]*mod;if(i%2===0)bars+=`<rect x="${x.toFixed(2)}" y="0" width="${w.toFixed(2)}" height="${h}"/>`;x+=w}});
   const W=x+10*mod;return`<svg class="bc" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W.toFixed(1)} ${h}" preserveAspectRatio="none" fill="#000" role="img" aria-label="barcode ${s}">${bars}</svg>`}
 export function qrSvg(text,cell=4){try{const q=window.qrcode(0,'M');q.addData(String(text),'Byte');q.make();return q.createSvgTag({cellSize:cell,margin:0,scalable:true})}catch(e){return'<svg viewBox="0 0 10 10"></svg>'}}
+
+/* ลิงก์เปิดแอปตรงๆ — สแกนด้วยกล้องมือถือปกติแล้วเด้งเข้าแอป (route: inspect|trace) */
+export const snLink=(sn,route='inspect')=>location.origin+location.pathname.replace(/index\.html$/,'')+'#/'+route+'/'+encodeURIComponent(sn);

@@ -4,7 +4,7 @@ import {openScanner,parseScan} from './scan.js';
 import {askRegister} from './inspect.js';
 import {esc,fNum,fPct,fDT,fDate,fTime} from './util.js';
 import {printLabels} from './products.js';
-import {code128,qrSvg} from './barcode.js';
+import {code128,qrSvg,snLink} from './barcode.js';
 export const title='ย้อนรอย';
 let q='';
 IN.tq=el=>{q=el.value;const box=document.getElementById('tres');if(box)box.innerHTML=results()};
@@ -30,7 +30,7 @@ function renderUnit(u){const p=getP(u.productId),lot=getL(u.lotId),ins=S.inspect
     <div class="acts" style="margin-top:14px;justify-content:flex-start;flex-wrap:wrap">${u.status!=='scrap'?`<a class="btn pri" href="#/inspect/${encodeURIComponent(u.sn)}">${ic('scan')} ${ins.length?'ตรวจซ้ำ':'ตรวจชิ้นนี้'}</a>`:''}<button class="btn" data-act="printSn" data-sn="${esc(u.sn)}">${ic('print')} พิมพ์ป้าย</button><button class="btn" data-act="certSn" data-sn="${esc(u.sn)}">${ic('file')} ใบรับรองผลตรวจ</button></div></div>
     <div class="card"><h2>ประวัติการตรวจ</h2>${acc||'<div class="empty-s">ยังไม่เคยตรวจ</div>'}</div></div>
   <div style="display:grid;gap:16px"><div class="card"><h2>เส้นทางชิ้นงาน (Genealogy)</h2><ul class="tl">${tl.map(e=>`<li class="${e.cls}"><time>${fDate(e.ts)} ${fTime(e.ts)}</time><b>${esc(e.t)}</b><small>${esc(e.s)}</small></li>`).join('')}</ul></div>
-  <div class="card" style="text-align:center"><div style="max-width:120px;margin:0 auto">${qrSvg(u.sn)}</div><div class="mono mut" style="font-size:.82rem;margin-top:8px">${esc(u.sn)}</div><small class="mut">ล็อตเดียวกัน ${sib.length} ชิ้น</small></div></div></div>`}
+  <div class="card" style="text-align:center"><div style="max-width:120px;margin:0 auto">${qrSvg(snLink(u.sn,'trace'))}</div><div class="mono mut" style="font-size:.82rem;margin-top:8px">${esc(u.sn)}</div><small class="mut">ล็อตเดียวกัน ${sib.length} ชิ้น</small></div></div></div>`}
 function renderLot(lot){const p=getP(lot.productId),s=lotStats(lot),us=S.units.filter(u=>u.lotId===lot.id).sort((a,b)=>a.sn.localeCompare(b.sn)),fy=s.inspected?s.firstPass/s.inspected*100:null,tgt=S.settings.target;
   return`<div class="ph"><a class="btn sm" href="#/trace">${ic('back')} ค้นหา</a><div><h1 class="mono" style="font-size:1.3rem">${esc(lot.lotNo)}</h1><p>${esc(p?.name)} · ${esc(lot.line)} · ${fDT(lot.ts)}</p></div><div class="sp"></div><button class="btn" data-act="printLot" data-id="${lot.id}">${ic('print')} พิมพ์ป้ายทั้งล็อต</button></div>
   <div class="grid g4" style="margin-bottom:16px"><div class="card kpi"><div class="l">ผลิต</div><div class="v">${s.units}</div><div class="s">ตรวจแล้ว ${s.inspected}</div></div><div class="card kpi ok"><div class="l">ผ่าน</div><div class="v">${s.pass}</div></div><div class="card kpi ${s.fail?'bad':''}"><div class="l">ไม่ผ่าน / Scrap</div><div class="v">${s.fail} / ${s.scrap}</div></div><div class="card kpi ${fy==null?'':fy>=tgt?'ok':'bad'}"><div class="l">ผ่านรอบแรก (FPY)</div><div class="v">${fy==null?'—':fNum(fy,1)+'%'}</div><div class="s">เป้า ${tgt}%</div></div></div>

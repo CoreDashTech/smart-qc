@@ -8,18 +8,33 @@ export function parseScan(t){t=String(t||'').trim();if(!t)return'';
   const p=t.match(/^(?:s\/?n|serial(?:\s*(?:no|number))?)\s*[:=#]\s*(.+)$/i);if(p)return p[1].trim();
   return t.replace(/[\r\n]+/g,' ').slice(0,120)}
 export function stopScan(){live=false;cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}
+const wk=document.createElement('canvas'),wx=wk.getContext('2d',{willReadFrequently:true});
+/* ถอดรหัสจากส่วนหนึ่งของภาพ (ความละเอียดเต็มของส่วนนั้น) */
+function qrAt(src,sx,sy,sw,sh,maxW){const k=Math.min(1,maxW/sw);wk.width=Math.max(1,Math.round(sw*k));wk.height=Math.max(1,Math.round(sh*k));wx.drawImage(src,sx,sy,sw,sh,0,0,wk.width,wk.height);
+  const d=wx.getImageData(0,0,wk.width,wk.height),q=window.jsQR&&jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});return q&&q.data?q.data:''}
+const crop=(w,h,f)=>[w*(1-f)/2,h*(1-f)/2,w*f,h*f];
+/* หลายกลยุทธ์: ตัดกลางภาพเต็มความละเอียด (QR เล็ก) / ทั้งภาพ / ซูมกลาง — pass = 0..2 */
+export function decodePass(src,w,h,pass){const f=[.6,1,.4][pass%3],[x,y,cw,ch]=crop(w,h,f);return qrAt(src,x,y,cw,ch,pass%3===1?960:1400)}
+/* ถอดรหัสจากรูปถ่ายนิ่ง (ชัดกว่าวิดีโอ) ลองหลายส่วน */
+export async function decodePhoto(file){const bm=await createImageBitmap(file),w=bm.width,h=bm.height;
+  if('BarcodeDetector' in window){try{const r=await new BarcodeDetector({formats:['qr_code','code_128','code_39','ean_13']}).detect(bm);if(r.length)return r[0].rawValue}catch(e){}}
+  for(const f of [1,.7,.5,.35]){const [x,y,cw,ch]=crop(w,h,f);const v=qrAt(bm,x,y,cw,ch,2000);if(v)return v}
+  for(const [ox,oy] of [[0,0],[.5,0],[0,.5],[.5,.5]]){const v=qrAt(bm,w*ox,h*oy,w*.5,h*.5,1600);if(v)return v}return''}
 export async function openScanner(onResult){
   if(!navigator.mediaDevices?.getUserMedia)return toast('เบราว์เซอร์นี้ไม่รองรับกล้อง — ต้องเปิดผ่าน https (เช่น GitHub Pages)',4500);
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280}},audio:false})}catch(e){return toast('เปิดกล้องไม่ได้ — กรุณาอนุญาตการใช้กล้อง แล้วลองใหม่',4500)}
-  modal(`<h2>สแกน QR / บาร์โค้ด</h2><div style="position:relative;border-radius:16px;overflow:hidden;background:#000"><video id="cv" playsinline muted autoplay style="width:100%;display:block;max-height:60vh;object-fit:cover"></video><div style="position:absolute;inset:18% 12%;border:3px solid var(--accent);border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.4)"></div></div><p class="mut" id="scmsg" style="font-size:.85rem;margin:10px 0 0">เล็งให้ QR / บาร์โค้ดอยู่ในกรอบ</p><div class="acts"><button class="btn" data-act="scanStop">ปิดกล้อง</button></div>`);
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false})}catch(e){return toast('เปิดกล้องไม่ได้ — กรุณาอนุญาตการใช้กล้อง แล้วลองใหม่',4500)}
+  const tr=stream.getVideoTracks()[0];let caps={};try{caps=tr.getCapabilities?.()||{};if(caps.focusMode?.includes('continuous'))await tr.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(e){}
+  const zoom=caps.zoom?`<div style="margin-top:10px;display:flex;gap:10px;align-items:center"><span class="mut" style="font-size:.85rem">ซูม</span><input id="scz" type="range" min="${caps.zoom.min}" max="${caps.zoom.max}" step="${caps.zoom.step||.1}" value="${caps.zoom.min}" style="flex:1"></div>`:'';
+  modal(`<h2>สแกน QR / บาร์โค้ด</h2><div style="position:relative;border-radius:16px;overflow:hidden;background:#000"><video id="cv" playsinline muted autoplay style="width:100%;display:block;max-height:60vh;object-fit:cover"></video><div style="position:absolute;inset:18% 12%;border:3px solid var(--accent);border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.4)"></div></div>${zoom}<p class="mut" id="scmsg" style="font-size:.85rem;margin:10px 0 0">เล็งให้ QR อยู่กลางกรอบ ถือห่าง 15–25 ซม. ให้ภาพชัด ไม่สะท้อนแสง</p><div class="acts"><label class="btn" style="cursor:pointer">${ic('camera')} ถ่ายรูป QR<input id="scph" type="file" accept="image/*" capture="environment" hidden></label><button class="btn" data-act="scanStop">ปิดกล้อง</button></div>`);
   const v=document.getElementById('cv');v.srcObject=stream;try{await v.play()}catch(e){}
-  const hasBD='BarcodeDetector' in window;let det=null;if(hasBD){try{det=new BarcodeDetector({formats:['qr_code','code_128','code_39','ean_13','ean_8','upc_a']})}catch(e){det=null}}
-  if(!det&&typeof window.jsQR!=='function'){document.getElementById('scmsg').textContent='ไม่มีตัวอ่านโค้ดในเครื่องนี้ — พิมพ์ Serial แทน'}
-  else if(!det)document.getElementById('scmsg').textContent='โหมดอ่าน QR (บาร์โค้ดเส้นให้ใช้เครื่องยิง หรือพิมพ์ Serial)';
-  const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});live=true;let last=0;
+  const zr=document.getElementById('scz');if(zr)zr.oninput=()=>tr.applyConstraints({advanced:[{zoom:+zr.value}]}).catch(()=>{});
   const done=val=>{stopScan();closeModal();if(navigator.vibrate)navigator.vibrate(60);onResult(parseScan(val))};
-  const tick=async t=>{if(!live)return;raf=requestAnimationFrame(tick);if(t-last<140||v.readyState<2)return;last=t;
+  document.getElementById('scph').onchange=async e=>{const f=e.target.files[0];if(!f)return;document.getElementById('scmsg').textContent='กำลังอ่านรูป…';try{const r=await decodePhoto(f);if(r)done(r);else document.getElementById('scmsg').textContent='อ่านจากรูปไม่ได้ — ลองถ่ายใกล้ขึ้น ให้ QR เต็มภาพ และชัด'}catch(err){document.getElementById('scmsg').textContent='อ่านรูปไม่ได้'}};
+  let det=null;if('BarcodeDetector' in window){try{det=new BarcodeDetector({formats:['qr_code','code_128','code_39','ean_13','ean_8','upc_a']})}catch(e){det=null}}
+  if(!det&&typeof window.jsQR!=='function')document.getElementById('scmsg').textContent='ไม่มีตัวอ่านโค้ดในเครื่องนี้ — ใช้ปุ่มถ่ายรูป หรือพิมพ์ Serial แทน';
+  live=true;let last=0,n=0;
+  const tick=async t=>{if(!live)return;raf=requestAnimationFrame(tick);if(t-last<120||v.readyState<2)return;last=t;
     try{if(det){const r=await det.detect(v);if(r.length&&live)return done(r[0].rawValue)}
-      else if(window.jsQR){const w=v.videoWidth,h=v.videoHeight,k=Math.min(1,640/Math.max(w,h));cv.width=w*k;cv.height=h*k;cx.drawImage(v,0,0,cv.width,cv.height);const d=cx.getImageData(0,0,cv.width,cv.height),q=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});if(q&&q.data&&live)done(q.data)}}catch(e){}};
+      if(window.jsQR&&v.videoWidth){const q=decodePass(v,v.videoWidth,v.videoHeight,n++);if(q&&live)done(q)}}catch(e){}};
   raf=requestAnimationFrame(tick)}
 ACT.scanStop=()=>{stopScan();closeModal()};
